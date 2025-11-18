@@ -1,0 +1,10 @@
+mlflow==3.6.0
+pyspark==4.0.1
+python-dotenv==1.2.1
+xgboost==3.1.1
+grpcio==1.76.0
+googleapis-common-protos==1.72.0
+imbalanced-learn==0.14.0
+scikit-learn==1.7.2
+dill==0.4.0
+joblib==1.5.2

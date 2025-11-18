@@ -1,0 +1,20 @@
+chmod +x init-multiple-dbs.sh
+chmod +x wait-for-it.sh
+
+To convert it into an executable
+
+Use it for building:
+docker compose --profile build build airflow-image && docker compose --profile flower up -d
+
+Use it for destroying:
+docker compose --profile flower down
+Docker compose down -v (volumnes)
+
+
+# para poder editar en carpetas de Airflow y darle permisos a Airflow después
+sudo chown -R $USER:$USER ~/DocumentsWLS/Data_Science_Projects/MLOPS-project-Credit-Card-Fraud-Detection-v2
+sudo chown -R 1000:0 ./dags ./logs ./plugins ./config ./models
+sudo chmod -R 775 ./dags ./logs ./plugins ./config ./models
+
+# para la parte de inferencia
+docker compose up inference -d --build

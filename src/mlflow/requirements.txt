@@ -1,0 +1,4 @@
+cryptography==46.0.3
+boto3==1.40.74
+mlflow==3.6.0
+psycopg2-binary==2.9.11

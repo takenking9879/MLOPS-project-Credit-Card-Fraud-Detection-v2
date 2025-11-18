@@ -1,20 +1,20 @@
-<div align="center">
-
 # 🛡️ MLOPS-project-Credit-Card-Fraud-Detection-v2
 
-[![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://www.python.org/)  
-[![Airflow](https://img.shields.io/badge/Airflow-3.x-yellow?logo=apache-airflow)](https://airflow.apache.org/)  
-[![Spark](https://img.shields.io/badge/Spark-4.0.1-orange?logo=apache-spark)](https://spark.apache.org/)  
-[![MLflow](https://img.shields.io/badge/MLflow-3.x-lightgrey?logo=mlflow)](https://mlflow.org/)  
-[![Kafka](https://img.shields.io/badge/Kafka-3.6.1-ff6600?logo=apache-kafka)](https://kafka.apache.org/)  
-[![Docker](https://img.shields.io/badge/Docker-24.0-blue?logo=docker)](https://www.docker.com/)  
-[![MinIO](https://img.shields.io/badge/MinIO-RE/OS-00a2ff?logo=minio)](https://min.io/)  
-[![Postgres](https://img.shields.io/badge/Postgres-15.0-336791?logo=postgresql)](https://www.postgresql.org/)  
+<div align="center">
+
+[![Python](https://img.shields.io/badge/Python-3.11-blue?logo=python)](https://www.python.org/) 
+[![Airflow](https://img.shields.io/badge/Airflow-3.x-yellow?logo=apache-airflow)](https://airflow.apache.org/) 
+[![Spark](https://img.shields.io/badge/Spark-4.0.1-orange?logo=apache-spark)](https://spark.apache.org/) 
+[![MLflow](https://img.shields.io/badge/MLflow-3.x-lightgrey?logo=mlflow)](https://mlflow.org/) 
+[![Kafka](https://img.shields.io/badge/Kafka-3.6.1-ff6600?logo=apache-kafka)](https://kafka.apache.org/) 
+[![Docker](https://img.shields.io/badge/Docker-24.0-blue?logo=docker)](https://www.docker.com/) 
+[![MinIO](https://img.shields.io/badge/MinIO-RE/OS-00a2ff?logo=minio)](https://min.io/) 
+[![Postgres](https://img.shields.io/badge/Postgres-15.0-336791?logo=postgresql)](https://www.postgresql.org/) 
 [![Redis](https://img.shields.io/badge/Redis-7.x-cc0000?logo=redis)](https://redis.io/)
 
----
-
 </div>
+
+---
 
 ## 📋 Descripción general
 

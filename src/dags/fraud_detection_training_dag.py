@@ -5,7 +5,7 @@ from airflow.exceptions import AirflowException
 import logging
 from datetime import datetime, timedelta
 from fraud_detection_training import FraudDetectionTraining
-
+import os
 logger = logging.getLogger(__name__)
 default_args = {
     'owner': 'datamasterylab.com',
@@ -18,7 +18,14 @@ default_args = {
 def _train_model(**context):
     try:
         logger.info('Initializing fraud detection training')
-        trainer = FraudDetectionTraining(config_path="/opt/airflow/dags/config.yaml") #Quitar el config si no es k8s
+
+        files = os.listdir('/opt/airflow/dags/')          # devuelve una lista de nombres de archivos y carpetas
+
+        # Mostrar en logs
+        for f in files:
+            logger.debug(f"Found file: {f}")
+
+        trainer = FraudDetectionTraining(config_path="/opt/airflow/dags/config_k8s.yaml") #Quitar el config si no es k8s
         model, precision = trainer.train_model()
         return {'status': 'success', 'precision': precision}
     except Exception as e:

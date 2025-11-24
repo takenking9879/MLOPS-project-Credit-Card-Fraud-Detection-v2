@@ -1,16 +1,21 @@
-# instalar airflow
-helm install my-airflow apache-airflow/airflow --namespace mlops-fraud --create-namespace -f k8s/airflow/airflow_values.yaml
-
+#### instalar airflow
+#Crear configuracion
 kubectl create configmap fraud-config --from-file=config.yaml=src/config.yaml -n mlops-fraud
 
+#instalar airflow
+helm install my-airflow apache-airflow/airflow --namespace mlops-fraud --create-namespace -f k8s/airflow/airflow_values.yaml
 
+#Borrar archivos residuales que no borra el uninstall
+kubectl delete secret my-airflow-broker-url my-airflow-fernet-key my-airflow-redis-password -n mlops-fraud
+
+##### mlflow
 # Instalar postgreSQL
 helm install postgres bitnami/postgresql -n mlops-fraud
 
 # Instalar mlflow
 helm install my-mlflow community-charts/mlflow -f k8s/mlflow/mlflow_values.yaml -n mlops-fraud
 
-
+##### Controller
 # Instalar el controller ingress
 helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --namespace ingress-nginx --create-namespace
 helm install ingress-rule ./k8s/ingress-rules -n mlops-fraud

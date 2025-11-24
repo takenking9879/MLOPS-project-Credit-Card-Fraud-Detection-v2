@@ -34,5 +34,5 @@ airflow:
 
   extraVolumeMounts:
     - name: config-volume
-      mountPath: /opt/airflow/config.yaml
+      mountPath: /opt/airflow/config/config.yaml
       subPath: config.yaml

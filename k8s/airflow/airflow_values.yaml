@@ -1,0 +1,38 @@
+# airflow_values.yaml
+
+# Imagen de Airflow personalizada
+images:
+  airflow:
+    repository: takenking9879/airflow-fraud
+    tag: latest
+    pullPolicy: IfNotPresent
+
+fernetkey: VnBXNmNoRE1HU3dIUTR3MFlBM3NlWHV0UUtwQTdoSmk=
+webserverSecretKey: 9d13b9cf8abdd54558e84d7d26e6423b
+
+# PostgreSQL integrado
+postgresql:
+  image:
+    tag: "latest"
+
+# Configuración de Git-Sync
+dags:
+  gitSync:
+    enabled: true
+    repo: "https://github.com/takenking9879/MLOPS-project-Credit-Card-Fraud-Detection-v2"
+    branch: "main"
+    subPath: "src/dags"
+  persistence:
+    enabled: false
+
+# Volúmenes y mounts adicionales para Airflow en general
+airflow:
+  extraVolumes:
+    - name: config-volume
+      configMap:
+        name: fraud-config
+
+  extraVolumeMounts:
+    - name: config-volume
+      mountPath: /app/config.yaml
+      subPath: config.yaml

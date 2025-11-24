@@ -1,0 +1,8 @@
+# values.yaml para PostgreSQL de Bitnami
+auth:
+  postgresPassword: postgres
+  database: mlflow
+
+primary:
+  persistence:
+    size: 10Gi

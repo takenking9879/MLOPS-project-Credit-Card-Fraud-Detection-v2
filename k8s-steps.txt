@@ -1,0 +1,36 @@
+# instalar airflow
+helm install my-airflow apache-airflow/airflow --namespace mlops-fraud --create-namespace -f k8s/airflow/airflow_values.yaml
+
+kubectl create configmap fraud-config --from-file=config.yaml=src/config.yaml -n mlops-fraud
+
+
+# Instalar postgreSQL
+helm install postgres bitnami/postgresql -n mlops-fraud
+
+# Instalar mlflow
+helm install my-mlflow community-charts/mlflow -f k8s/mlflow/mlflow_values.yaml -n mlops-fraud
+
+
+# Instalar el controller ingress
+helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --namespace ingress-nginx --create-namespace
+helm install ingress-rule ./k8s/ingress-rules -n mlops-fraud
+
+# Instalar minio
+helm install my-minio oci://registry-1.docker.io/cloudpirates/minio --version 0.5.6 -f k8s/minio/minio_values.yaml -n mlops-fraud
+
+
+#En kafka
+- Environment: FraudDetection
+- Cluster: fraud_detection_cluster
+- topic: transactions
+
+# Generar y Correr el producer
+#Generar imagen
+docker build -t k8s-producer src/./producer
+#Correr imagen
+docker run -d \
+  --name producer \
+  --env-file .env \
+  --cpus="1" \
+  --memory="1g" \
+  k8s-producer 

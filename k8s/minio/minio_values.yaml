@@ -1,0 +1,12 @@
+# Sección: MinIO® authentication parameters
+auth:
+  ## @param auth.rootUser MinIO® root username
+  rootUser: minio # <--- Cambiado a 'minioadmin'
+  ## @param auth.rootPassword Password for MinIO® root user
+  rootPassword: minio123 # <--- Cambiado a 'minio123'
+  # ... (resto de la sección auth sin cambios)
+  
+## @param defaultBuckets Comma, semi-colon or space separated list of buckets to create at initialization
+## e.g:
+## defaultBuckets: "my-bucket, my-second-bucket"
+defaultBuckets: "mlflow" # <--- CRÍTICO: Crea el bucket que MLflow necesita

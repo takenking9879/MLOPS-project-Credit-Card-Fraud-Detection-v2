@@ -1,0 +1,22 @@
+# values.yaml
+# ... (Sección Ingress)
+ingress:
+  enabled: true
+  name: mlops-ingress
+  namespace: mlops-fraud
+  ingressClassName: nginx
+  host:
+    airflow: airflow.localhost
+    mlflow: mlflow.localhost
+    minio: minio.localhost
+
+  # Airflow
+  airflowServiceName: my-airflow-api-server
+  airflowServicePort: 8080
+
+  # MLflow
+  mlflowServiceName: my-mlflow
+  mlflowServicePort: 80 # Asegúrate de usar el 80 que es el que vimos en kubectl get svc
+
+  minioServiceName: my-minio
+  minioServicePort: 9090

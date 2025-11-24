@@ -1,0 +1,27 @@
+# values.yaml para MLflow
+backendStore:
+  databaseMigration: true
+  postgres:
+    enabled: true
+    host: postgres-postgresql
+    port: 5432
+    database: mlflow
+    user: postgres
+    password: "" 
+
+artifactRoot:
+  s3:
+    enabled: true
+    bucket: mlflow
+    awsAccessKeyId: ""
+    awsSecretAccessKey: ""
+
+extraEnvVars:
+  MLFLOW_S3_ENDPOINT_URL: http://minio-service:9000
+  MLFLOW_S3_IGNORE_TLS: "true"
+  MLFLOW_SERVER_ALLOWED_HOSTS: "mlflow.localhost"
+
+
+extraEnvFrom:
+  - secretRef:
+      name: fraud-env

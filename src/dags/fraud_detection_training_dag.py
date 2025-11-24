@@ -6,6 +6,8 @@ import logging
 from datetime import datetime, timedelta
 from fraud_detection_training import FraudDetectionTraining
 import os
+import glob
+
 logger = logging.getLogger(__name__)
 default_args = {
     'owner': 'datamasterylab.com',
@@ -18,14 +20,19 @@ default_args = {
 def _train_model(**context):
     try:
         logger.info('Initializing fraud detection training')
+        ##debuggin
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        logger.info(f"Current directory: {current_dir}")
 
-        files = os.listdir('dags/.')          # devuelve una lista de nombres de archivos y carpetas
+        yaml_files = glob.glob(os.path.join(current_dir, "*.yaml"))
 
-        # Mostrar en logs
-        for f in files:
-            logger.info(f"Found file: {f}")
-
-        trainer = FraudDetectionTraining(config_path="/opt/airflow/dags/config_k8s.yaml") #Quitar el config si no es k8s
+        if not yaml_files:
+            logger.error("No se encontró ningún archivo YAML en el directorio")
+            raise FileNotFoundError("No se encontró ningún archivo YAML en el directorio")
+        for f in yaml_files:
+            logger.info(f"Found YAML file: {f}")
+        #####
+        trainer = FraudDetectionTraining() #Quitar el config si no es k8s
         model, precision = trainer.train_model()
         return {'status': 'success', 'precision': precision}
     except Exception as e:

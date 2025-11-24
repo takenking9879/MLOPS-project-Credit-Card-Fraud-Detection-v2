@@ -7,14 +7,14 @@ backendStore:
     port: 5432
     database: mlflow
     user: postgres
-    password: "" 
+    password: postgres 
 
 artifactRoot:
   s3:
     enabled: true
     bucket: mlflow
-    awsAccessKeyId: ""
-    awsSecretAccessKey: ""
+    awsAccessKeyId: minio
+    awsSecretAccessKey: minio123
 
 extraEnvVars:
   MLFLOW_S3_ENDPOINT_URL: http://minio-service:9000

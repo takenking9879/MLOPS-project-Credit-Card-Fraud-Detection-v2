@@ -19,7 +19,7 @@ def _train_model(**context):
     try:
         logger.info('Initializing fraud detection training')
 
-        files = os.listdir('/opt/airflow/dags/')          # devuelve una lista de nombres de archivos y carpetas
+        files = os.listdir('.')          # devuelve una lista de nombres de archivos y carpetas
 
         # Mostrar en logs
         for f in files:

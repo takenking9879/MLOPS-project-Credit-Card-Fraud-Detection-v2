@@ -21,34 +21,29 @@ default_args = {
 def _train_model(**context):
     try:
         logger.info('Initializing fraud detection training')
-        ##airflow k8s
+
+        ##airflow k8s 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         logger.info(f"Current directory: {current_dir}")
 
         # Buscar YAML en el mismo directorio
         yaml_files = glob.glob(os.path.join(current_dir, "*.yaml"))
-        if not yaml_files:
-            logger.error("No se encontró ningún archivo YAML en el directorio")
-            raise FileNotFoundError("No se encontró ningún archivo YAML en el directorio")
-
-        for f in yaml_files:
-            logger.info(f"Found YAML file: {f}")
-
         config_path = yaml_files[0]
-
-        # Leer el YAML como texto y reemplazar placeholders ${VAR} por env vars
+        # Leer el YAML original como texto
         with open(config_path, "r") as f:
             content = f.read()
-
-        # Reemplazo dinámico de variables de entorno
+        # Reemplazo dinámico de variables de entorno (${VAR} -> os.environ)
         content = re.sub(r"\$\{(\w+)\}", lambda m: os.getenv(m.group(1), ""), content)
+        # Crear nuevo YAML: config_k8s_secrets.yaml
+        base_name = os.path.basename(config_path).replace(".yaml", "_secrets.yaml")
+        new_config_path = os.path.join(current_dir, base_name)
+        # Guardar el YAML con las secrets inyectadas
+        with open(new_config_path, "w") as f:
+            f.write(content)
+        logger.info(f"Created secrets YAML: {new_config_path}")
 
-        # Cargar YAML ya con los valores reemplazados
-        config = yaml.safe_load(content)
-        #######
-
-        # Inicializar el trainer con el config
-        trainer = FraudDetectionTraining(config=config)  #eliminar config=config para la version de compose
+        # Inicializar el trainer con el YAML generado
+        trainer = FraudDetectionTraining(config_path=new_config_path) #eliminar config_path para la version de compose
         model, precision = trainer.train_model()
 
         return {'status': 'success', 'precision': precision}

@@ -1,6 +1,9 @@
 #### instalar airflow
 #Crear configuracion
-kubectl create configmap fraud-config --from-file=config.yaml=src/config.yaml -n mlops-fraud
+kubectl create secret generic env-secret \
+  --from-env-file=src/.env \
+  -n mlops-fraud
+
 
 #instalar airflow
 helm install my-airflow apache-airflow/airflow --namespace mlops-fraud --create-namespace -f k8s/airflow/airflow_values.yaml

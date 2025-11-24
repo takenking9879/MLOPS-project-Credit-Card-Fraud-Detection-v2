@@ -6,9 +6,6 @@ import logging
 from datetime import datetime, timedelta
 from fraud_detection_training import FraudDetectionTraining
 import os
-import glob
-import yaml
-import re
 logger = logging.getLogger(__name__)
 default_args = {
     'owner': 'datamasterylab.com',
@@ -21,35 +18,8 @@ default_args = {
 def _train_model(**context):
     try:
         logger.info('Initializing fraud detection training')
-
-        ##airflow k8s 
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        logger.info(f"Current directory: {current_dir}")
-
-        # Buscar YAML en el mismo directorio
-        yaml_files = glob.glob(os.path.join(current_dir, "*.yaml"))
-        config_path = yaml_files[0]
-        logger.info(f"Found YAML file: {config_path}")
-
-        # Leer el YAML original como texto
-        with open(config_path, "r") as f:
-            content = f.read()
-
-        # Reemplazo dinámico de variables de entorno (${VAR} -> os.environ)
-        content = re.sub(r"\$\{(\w+)\}", lambda m: os.getenv(m.group(1), ""), content)
-
-        # Guardar el YAML con las secrets inyectadas en /tmp
-        new_config_path = "/tmp/config_k8s_secrets.yaml"
-        with open(new_config_path, "w") as f:
-            f.write(content)
-
-        logger.info(f"Created secrets YAML in /tmp: {new_config_path}")
-        ##### END k8s
-
-        # Inicializar el trainer con el YAML generado
-        trainer = FraudDetectionTraining(config_path=new_config_path) #eliminar config_path para la version de compose
+        trainer = FraudDetectionTraining() #Quitar el config si no es k8s
         model, precision = trainer.train_model()
-
         return {'status': 'success', 'precision': precision}
     except Exception as e:
         logger.error('Training failed: %s', str(e), exc_info=True)

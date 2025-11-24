@@ -7,7 +7,8 @@ from datetime import datetime, timedelta
 from fraud_detection_training import FraudDetectionTraining
 import os
 import glob
-
+import yaml
+import re
 logger = logging.getLogger(__name__)
 default_args = {
     'owner': 'datamasterylab.com',
@@ -20,20 +21,36 @@ default_args = {
 def _train_model(**context):
     try:
         logger.info('Initializing fraud detection training')
-        ##debuggin
+        ##airflow k8s
         current_dir = os.path.dirname(os.path.realpath(__file__))
         logger.info(f"Current directory: {current_dir}")
 
+        # Buscar YAML en el mismo directorio
         yaml_files = glob.glob(os.path.join(current_dir, "*.yaml"))
-
         if not yaml_files:
             logger.error("No se encontró ningún archivo YAML en el directorio")
             raise FileNotFoundError("No se encontró ningún archivo YAML en el directorio")
+
         for f in yaml_files:
             logger.info(f"Found YAML file: {f}")
-        #####
-        trainer = FraudDetectionTraining(config_path=yaml_files[0]) #Quitar el config si no es k8s
+
+        config_path = yaml_files[0]
+
+        # Leer el YAML como texto y reemplazar placeholders ${VAR} por env vars
+        with open(config_path, "r") as f:
+            content = f.read()
+
+        # Reemplazo dinámico de variables de entorno
+        content = re.sub(r"\$\{(\w+)\}", lambda m: os.getenv(m.group(1), ""), content)
+
+        # Cargar YAML ya con los valores reemplazados
+        config = yaml.safe_load(content)
+        #######
+
+        # Inicializar el trainer con el config
+        trainer = FraudDetectionTraining(config=config)  #eliminar config=config para la version de compose
         model, precision = trainer.train_model()
+
         return {'status': 'success', 'precision': precision}
     except Exception as e:
         logger.error('Training failed: %s', str(e), exc_info=True)

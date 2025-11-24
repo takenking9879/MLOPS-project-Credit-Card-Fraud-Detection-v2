@@ -21,7 +21,5 @@ extraEnvVars:
   MLFLOW_S3_IGNORE_TLS: "true"
   MLFLOW_SERVER_ALLOWED_HOSTS: "mlflow.localhost"
 
-
-extraEnvFrom:
-  - secretRef:
-      name: fraud-env
+extraSecretNamesForEnvFrom:
+  - env-secret

@@ -24,3 +24,8 @@ dags:
     subPath: "src/dags"
   persistence:
     enabled: false
+
+airflow:
+  extraEnvFrom:
+    - secretRef:
+        name: env-secret

@@ -6,6 +6,7 @@ kubectl create configmap fraud-config --from-file=config.yaml=src/config.yaml -n
 helm install my-airflow apache-airflow/airflow --namespace mlops-fraud --create-namespace -f k8s/airflow/airflow_values.yaml
 
 #Borrar archivos residuales que no borra el uninstall
+helm uninstall my-airflow -n mlops-fraud
 kubectl delete secret my-airflow-broker-url my-airflow-fernet-key my-airflow-redis-password -n mlops-fraud
 
 ##### mlflow

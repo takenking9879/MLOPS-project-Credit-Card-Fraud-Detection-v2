@@ -24,15 +24,3 @@ dags:
     subPath: "src/dags"
   persistence:
     enabled: false
-
-# Volúmenes y mounts adicionales para Airflow en general
-airflow:
-  extraVolumes:
-    - name: config-volume
-      configMap:
-        name: fraud-config
-
-  extraVolumeMounts:
-    - name: config-volume
-      mountPath: /opt/airflow/config/config.yaml
-      subPath: config.yaml

@@ -18,7 +18,7 @@ default_args = {
 def _train_model(**context):
     try:
         logger.info('Initializing fraud detection training')
-        trainer = FraudDetectionTraining(config_path="config_k8s.yaml") #Quitar el config si no es k8s
+        trainer = FraudDetectionTraining(config_path="/opt/airflow/dags/config.yaml") #Quitar el config si no es k8s
         model, precision = trainer.train_model()
         return {'status': 'success', 'precision': precision}
     except Exception as e:

@@ -23,7 +23,7 @@ def _train_model(**context):
 
         # Mostrar en logs
         for f in files:
-            logger.debug(f"Found file: {f}")
+            logger.info(f"Found file: {f}")
 
         trainer = FraudDetectionTraining(config_path="/opt/airflow/dags/config_k8s.yaml") #Quitar el config si no es k8s
         model, precision = trainer.train_model()

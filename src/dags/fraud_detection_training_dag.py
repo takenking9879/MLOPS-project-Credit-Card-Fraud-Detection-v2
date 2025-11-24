@@ -29,18 +29,22 @@ def _train_model(**context):
         # Buscar YAML en el mismo directorio
         yaml_files = glob.glob(os.path.join(current_dir, "*.yaml"))
         config_path = yaml_files[0]
+        logger.info(f"Found YAML file: {config_path}")
+
         # Leer el YAML original como texto
         with open(config_path, "r") as f:
             content = f.read()
+
         # Reemplazo dinámico de variables de entorno (${VAR} -> os.environ)
         content = re.sub(r"\$\{(\w+)\}", lambda m: os.getenv(m.group(1), ""), content)
-        # Crear nuevo YAML: config_k8s_secrets.yaml
-        base_name = os.path.basename(config_path).replace(".yaml", "_secrets.yaml")
-        new_config_path = os.path.join(current_dir, base_name)
-        # Guardar el YAML con las secrets inyectadas
+
+        # Guardar el YAML con las secrets inyectadas en /tmp
+        new_config_path = "/tmp/config_k8s_secrets.yaml"
         with open(new_config_path, "w") as f:
             f.write(content)
-        logger.info(f"Created secrets YAML: {new_config_path}")
+
+        logger.info(f"Created secrets YAML in /tmp: {new_config_path}")
+        ##### END k8s
 
         # Inicializar el trainer con el YAML generado
         trainer = FraudDetectionTraining(config_path=new_config_path) #eliminar config_path para la version de compose

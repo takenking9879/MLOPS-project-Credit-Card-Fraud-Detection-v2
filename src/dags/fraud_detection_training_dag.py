@@ -32,7 +32,7 @@ def _train_model(**context):
         for f in yaml_files:
             logger.info(f"Found YAML file: {f}")
         #####
-        trainer = FraudDetectionTraining(config_path="/opt/airflow/dags/.worktrees/a8fb6c9e820ca729788fd53f844c05152ba2e2f6/src/dags/config_k8s.yaml") #Quitar el config si no es k8s
+        trainer = FraudDetectionTraining(config_path=yaml_files[0]) #Quitar el config si no es k8s
         model, precision = trainer.train_model()
         return {'status': 'success', 'precision': precision}
     except Exception as e:

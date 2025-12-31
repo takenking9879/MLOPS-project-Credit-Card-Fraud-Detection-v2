@@ -143,7 +143,7 @@ jobs:
           airflow_status=$(helm -n mlops-fraud status my-airflow -o json 2>/dev/null | jq -r '.info.status' || true)
           if [ "$airflow_status" = "failed" ]; then
             echo "Airflow release is failed; deleting known leftover secrets..."
-            kubectl uninstall my-airflow -n mlops-fraud
+            helm uninstall my-airflow -n mlops-fraud
             kubectl -n mlops-fraud delete secret my-airflow-broker-url my-airflow-fernet-key my-airflow-redis-password --ignore-not-found
           else
             echo "Airflow release status: ${airflow_status:-not-installed} (no cleanup)"
@@ -162,7 +162,7 @@ jobs:
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
           helm upgrade --install postgres bitnami/postgresql -n mlops-fraud -f k8s/postgres/postgres_values.yaml \
-            --wait --timeout 45s
+            --wait --timeout 40s
 
       - name: Install MLflow (S3)
         run: |

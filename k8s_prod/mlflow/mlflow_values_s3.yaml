@@ -1,0 +1,25 @@
+# MLflow values (S3 real)
+backendStore:
+  databaseMigration: true
+  postgres:
+    enabled: true
+    host: postgres-postgresql
+    port: 5432
+    database: mlflow
+    user: postgres
+    password: postgres
+
+artifactRoot:
+  s3:
+    enabled: true
+    bucket: __MLFLOW_S3_BUCKET__
+    awsAccessKeyId: __MLFLOW_S3_ACCESS_KEY_ID__
+    awsSecretAccessKey: __MLFLOW_S3_SECRET_ACCESS_KEY__
+
+extraEnvVars:
+  # Para S3 real NO se define MLFLOW_S3_ENDPOINT_URL
+  MLFLOW_S3_IGNORE_TLS: "true"
+  MLFLOW_SERVER_ALLOWED_HOSTS: "my-mlflow"
+
+extraSecretNamesForEnvFrom:
+  - env-secret

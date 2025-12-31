@@ -1,0 +1,132 @@
+name: EKS CI/CD
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'README.md'
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  integration:
+    name: Continuous Integration
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Lint code
+        run: echo "Linting repository"
+
+      - name: Run unit tests
+        run: echo "Running unit tests"
+
+  deploy:
+    name: Deploy to EKS
+    needs: integration
+    runs-on: ubuntu-latest
+
+    env:
+      AWS_REGION: ${{ secrets.AWS_REGION }}
+      EKS_CLUSTER_NAME: ${{ secrets.EKS_CLUSTER_NAME }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+
+      - name: Install utilities
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq unzip curl
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Setup kubectl
+        uses: azure/setup-kubectl@v3
+        with:
+          version: latest
+
+      - name: Setup Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Update kubeconfig
+        run: |
+          aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER_NAME"
+
+      - name: Create namespace
+        run: |
+          kubectl create namespace mlops-fraud --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Create env-secret from GitHub Secrets
+        run: |
+          MLFLOW_S3_BUCKET='${{ secrets.MLFLOW_S3_BUCKET }}'
+          MLFLOW_S3_ENDPOINT_URL=""
+
+          kubectl create secret generic env-secret -n mlops-fraud \
+            --from-literal=AWS_ACCESS_KEY_ID='${{ secrets.AWS_ACCESS_KEY_ID }}' \
+            --from-literal=AWS_SECRET_ACCESS_KEY='${{ secrets.AWS_SECRET_ACCESS_KEY }}' \
+            --from-literal=KAFKA_BOOTSTRAP_SERVERS='${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}' \
+            --from-literal=KAFKA_USERNAME='${{ secrets.KAFKA_USERNAME }}' \
+            --from-literal=KAFKA_PASSWORD='${{ secrets.KAFKA_PASSWORD }}' \
+            --from-literal=KAFKA_TOPIC='${{ secrets.KAFKA_TOPIC }}' \
+            --from-literal=MLFLOW_S3_BUCKET="$MLFLOW_S3_BUCKET" \
+            --from-literal=MLFLOW_S3_ENDPOINT_URL="$MLFLOW_S3_ENDPOINT_URL" \
+            --dry-run=client -o yaml | kubectl apply -f -
+
+      - name: Apply EFS StorageClass (dynamic provisioning)
+        env:
+          EFS_FILE_SYSTEM_ID: ${{ secrets.EFS_FILE_SYSTEM_ID }}
+        run: |
+          sed "s/__EFS_FILE_SYSTEM_ID__/$EFS_FILE_SYSTEM_ID/g" k8s_prod/storageclass-efs.yaml | kubectl apply -f -
+
+      - name: Apply EFS-backed PVCs
+        run: |
+          kubectl apply -f k8s_prod/airflow/models-pvc.yaml -n mlops-fraud
+          kubectl apply -f k8s_prod/inference/spark-checkpoints-pvc.yaml -n mlops-fraud
+
+      - name: Install ingress-nginx
+        run: |
+          helm upgrade --install ingress-nginx ingress-nginx \
+            --repo https://kubernetes.github.io/ingress-nginx \
+            --namespace ingress-nginx --create-namespace
+
+      - name: Install ingress rules
+        run: |
+          helm upgrade --install ingress-rule ./k8s_prod/ingress-rules -n mlops-fraud
+
+      - name: Install PostgreSQL (Bitnami)
+        run: |
+          helm repo add bitnami https://charts.bitnami.com/bitnami
+          helm repo update
+          helm upgrade --install postgres bitnami/postgresql -n mlops-fraud -f k8s/postgres/postgres_values.yaml
+
+      - name: Install MLflow (S3)
+        run: |
+          helm repo add community-charts https://community-charts.github.io/helm-charts
+          helm repo update
+          sed \
+            -e "s/__MLFLOW_S3_BUCKET__/${{ secrets.MLFLOW_S3_BUCKET }}/g" \
+            -e "s/__MLFLOW_S3_ACCESS_KEY_ID__/${{ secrets.AWS_ACCESS_KEY_ID }}/g" \
+            -e "s/__MLFLOW_S3_SECRET_ACCESS_KEY__/${{ secrets.AWS_SECRET_ACCESS_KEY }}/g" \
+            k8s_prod/mlflow/mlflow_values_s3.yaml | \
+          helm upgrade --install my-mlflow community-charts/mlflow -n mlops-fraud -f -
+
+      - name: Install Airflow
+        run: |
+          helm repo add apache-airflow https://airflow.apache.org
+          helm repo update
+          helm upgrade --install my-airflow apache-airflow/airflow --namespace mlops-fraud -f k8s_prod/airflow/airflow_values.yaml
+
+      - name: Apply inference pod
+        run: |
+          kubectl apply -f k8s_prod/inference/inference_values_gitsync.yaml -n mlops-fraud

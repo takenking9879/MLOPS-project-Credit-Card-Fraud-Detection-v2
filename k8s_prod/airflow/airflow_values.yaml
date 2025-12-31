@@ -1,0 +1,86 @@
+images:
+  airflow:
+    repository: takenking9879/airflow-fraud
+    tag: latest
+    pullPolicy: IfNotPresent
+
+fernetKey: VnBXNmNoRE1HU3dIUTR3MFlBM3NlWHV0UUtwQTdoSmk=
+webserverSecretKey: 9d13b9cf8abdd54558e84d7d26e6423b
+
+# PostgreSQL integrado
+postgresql:
+  image:
+    tag: "latest"
+
+dags:
+  gitSync:
+    enabled: true
+    repo: "https://github.com/takenking9879/MLOPS-project-Credit-Card-Fraud-Detection-v2"
+    branch: "main"
+    subPath: "k8s_prod/airflow/dags"
+  persistence:
+    enabled: false
+
+
+workers:
+  extraVolumes:
+    - name: models-volume
+      persistentVolumeClaim:
+        claimName: models-pvc
+
+  extraVolumeMounts:
+    - name: models-volume
+      mountPath: /models
+      readOnly: false
+# ==========================================================
+# ESTRUCTURA SOLICITADA: extraEnv directamente bajo el componente
+# (Esto podría causar el error anterior, pero es la estructura pedida)
+# ==========================================================
+extraEnv: |
+  - name: AWS_ACCESS_KEY_ID
+    valueFrom:
+      secretKeyRef:
+        name: env-secret
+        key: AWS_ACCESS_KEY_ID
+
+  - name: AWS_SECRET_ACCESS_KEY
+    valueFrom:
+      secretKeyRef:
+        name: env-secret
+        key: AWS_SECRET_ACCESS_KEY
+
+  - name: KAFKA_BOOTSTRAP_SERVERS
+    valueFrom:
+      secretKeyRef:
+        name: env-secret
+        key: KAFKA_BOOTSTRAP_SERVERS
+
+  - name: KAFKA_USERNAME
+    valueFrom:
+      secretKeyRef:
+        name: env-secret
+        key: KAFKA_USERNAME
+
+  - name: KAFKA_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: env-secret
+        key: KAFKA_PASSWORD
+
+  - name: KAFKA_TOPIC
+    valueFrom:
+      secretKeyRef:
+        name: env-secret
+        key: KAFKA_TOPIC
+
+  - name: MLFLOW_S3_BUCKET
+    valueFrom:
+      secretKeyRef:
+        name: env-secret
+        key: MLFLOW_S3_BUCKET
+
+  - name: MLFLOW_S3_ENDPOINT_URL
+    valueFrom:
+      secretKeyRef:
+        name: env-secret
+        key: MLFLOW_S3_ENDPOINT_URL

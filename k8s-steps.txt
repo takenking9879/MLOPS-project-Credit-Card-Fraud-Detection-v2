@@ -41,14 +41,14 @@ kubectl cp k8s/airflow/dags/. mlops-fraud/my-airflow-scheduler-787fdd4dd6-jb796:
 #Tener volumenes para guardar modelos
 kubectl apply -f k8s/inference/spark-checkpoints-pvc.yaml -n mlops-fraud
 
-#Adjuntar los archivos al este
+#Adjuntar los archivos al este (esto no se usa en gitsync)
 kubectl create configmap inference-app-files \
   --from-file=k8s/airflow/dags/config_k8s.yaml \
   --from-file=k8s/inference/main.py \
   -n mlops-fraud
 
 #inference
-kubectl apply -f k8s/inference/inference_values.yaml -n mlops-fraud
+kubectl apply -f k8s/inference/inference_values_gitsync.yaml -n mlops-fraud
 
 
 #En kafka

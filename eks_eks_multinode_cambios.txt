@@ -1,0 +1,110 @@
+LISTA DE CAMBIOS PARA MIGRAR A EKS (Y LUEGO MULTI-NODO)
+=======================================================
+
+Contexto actual (lo que veo en este repo)
+----------------------------------------
+- PVCs usan storageClassName: hostpath (k8s/airflow/models-pvc.yaml, k8s/inference/spark-checkpoints-pvc.yaml).
+- Airflow está montando un PVC de modelos (RWO) en workers.
+- Inference usa un Pod “debug” que monta /models (readOnly) y un PVC de checkpoints.
+- MLflow usa Postgres dentro del cluster y artifacts vía S3 pero apuntando a MinIO interno.
+
+1) Cambios mínimos para que funcione en EKS (single-node group / “funciona en AWS”)
+---------------------------------------------------------------------------------
+A. Storage (CRÍTICO)
+- Reemplazar storageClassName: hostpath por una StorageClass real de EKS.
+  - Recomendado: EBS CSI (gp3).
+  - Cambio concreto:
+    - En k8s/airflow/models-pvc.yaml: storageClassName: gp3 (o la SC por defecto del cluster).
+    - En k8s/inference/spark-checkpoints-pvc.yaml: storageClassName: gp3.
+- Asegurar que el driver EBS CSI esté instalado en el cluster.
+  - En Terraform: instalar addon aws-ebs-csi-driver con IRSA.
+
+B. Imágenes y registry
+- Ideal: mover imágenes a ECR y referenciarlas desde Helm/YAML.
+  - Si usas DockerHub: confirmar pull limits / credenciales y usar imagePullSecrets si aplica.
+
+C. Ingress/Networking
+- En EKS, define cómo expones servicios:
+  - Opción 1: ingress-nginx con Service type LoadBalancer (NLB/CLB).
+  - Opción 2: AWS Load Balancer Controller (ALB Ingress).
+- Si sigues con ingress-nginx, revisa annotations específicas de AWS para NLB (si lo necesitas).
+
+D. Secretos
+- Evitar “kubectl create secret --from-env-file” manual para entornos reales.
+  - Recomendado en EKS: AWS Secrets Manager + External Secrets Operator (ESO).
+  - Mínimo viable: mantener Secret de Kubernetes, pero creado vía manifest/CI, no manual.
+
+E. Airflow chart: variables de entorno
+- En k8s/airflow/airflow_values.yaml tienes extraEnv a nivel raíz como string YAML.
+  - En el chart oficial de apache-airflow, normalmente los env van por componente (webserver/scheduler/workers/triggerer) y/o con keys específicas.
+  - Ajuste recomendado:
+    - Mover esas variables a:
+      - workers.extraEnv
+      - scheduler.extraEnv
+      - webserver.extraEnv
+    - O usar extraEnvFrom / envFrom si el chart lo soporta.
+  - Si lo dejas en raíz, es probable que NO se aplique y te falle por falta de env vars.
+
+F. Dependencias “managed” (opcional pero recomendado)
+- PostgreSQL:
+  - Para prod: reemplazar Postgres in-cluster por RDS (mejor HA/backup).
+- MinIO:
+  - Para prod: reemplazar MinIO por S3 real (reduce operación).
+
+
+2) Cambios para que funcione bien multi-nodo (HA / scheduling en varios nodos)
+-----------------------------------------------------------------------------
+A. Volúmenes compartidos (RWX) vs EBS (RWO)
+- EBS es RWO: un PVC solo puede montarse por un nodo a la vez.
+- Hoy:
+  - models-pvc: RWO montado por workers.
+  - En multi-nodo, si escalas workers o cambian de nodo, puedes tener problemas.
+- Recomendaciones:
+  1) Modelos y checkpoints (tu elección actual): usar EFS (RWX).
+     - Cambiar los PVCs del repo a ReadWriteMany con StorageClass EFS.
+     - Instalar aws-efs-csi-driver en el cluster (Terraform ya lo contempla en /terraform).
+
+B. Airflow: scheduler/webserver/metadata DB
+- Para multi-nodo estable:
+  - Metadata DB (Postgres) idealmente en RDS.
+  - Si usas CeleryExecutor/Redis, considerar ElastiCache.
+  - Configurar réplicas de webserver/scheduler según soporte del chart.
+
+C. MLflow: backend y artifacts
+- Backend store: usar RDS (o Postgres altamente disponible), no un Pod.
+- Artifacts:
+  - Multi-nodo y prod: S3 real.
+  - Si mantienes MinIO, asegurar persistencia correcta y HA (complicado).
+
+D. IAM / permisos por Pod (IRSA)
+- Sustituir credenciales AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY en Secrets por IRSA.
+  - Cada ServiceAccount obtiene un rol IAM con permisos mínimos (S3, etc.).
+  - Esto simplifica rotación y mejora seguridad.
+
+E. Afinidad/requests/limits
+- Definir requests/limits coherentes para que el scheduler distribuya pods bien.
+- Añadir PodDisruptionBudgets (PDB) para servicios críticos (Airflow scheduler, MLflow, etc.).
+
+F. Observabilidad
+- Para multi-nodo, centralizar logs y métricas:
+  - CloudWatch/Prometheus/Grafana según tu stack.
+
+
+3) Qué archivos tocar (resumen por ruta)
+----------------------------------------
+- k8s/airflow/models-pvc.yaml
+  - storageClassName: hostpath -> gp3 (EBS) o efs-sc (si migras a EFS)
+- k8s/inference/spark-checkpoints-pvc.yaml
+  - storageClassName: hostpath -> gp3 o efs-sc
+- k8s/airflow/airflow_values.yaml
+  - Reubicar env vars al bloque correcto del chart (workers/scheduler/webserver)
+- k8s/mlflow/mlflow_values.yaml
+  - Para prod: apuntar a RDS + S3 real (opcional pero recomendado)
+
+
+4) Notas prácticas (EKS)
+------------------------
+- Instalar EBS CSI driver (Terraform en /terraform ya lo prepara).
+- Actualizar kubeconfig:
+  - aws eks update-kubeconfig --region <REGION> --name <CLUSTER_NAME>
+- Después instalar tus charts (airflow, postgres, mlflow, minio, ingress) como hoy, pero con StorageClass válida.

@@ -1,0 +1,34 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ .Values.ingress.name }}
+  namespace: {{ .Values.ingress.namespace }}
+  annotations:
+    kubernetes.io/ingress.class: {{ .Values.ingress.ingressClassName }}
+spec:
+  ingressClassName: {{ .Values.ingress.ingressClassName }}
+  rules:
+    - host: {{ .Values.ingress.host.airflow }}
+      http:
+        paths:
+          # Airflow: directamente en la raíz
+          - path: "/" 
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.ingress.airflowServiceName }}
+                port:
+                  number: {{ .Values.ingress.airflowServicePort }}
+    - host: {{ .Values.ingress.host.mlflow }}
+      http:
+        paths:
+          # MLflow en /mlflow
+          - path: "/"
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.ingress.mlflowServiceName }}
+                port:
+                  number: {{ .Values.ingress.mlflowServicePort }}
+{{- end }}

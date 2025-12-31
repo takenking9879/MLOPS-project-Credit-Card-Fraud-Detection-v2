@@ -26,7 +26,7 @@ class FraudDetectionInference:
     password = None
     sasl_jaa_config = None
 
-    def __init__(self, config_path='/app/config_k8s.yaml'):
+    def __init__(self, config_path='/app/repo/k8s/airflow/dags/config_k8s.yaml'):
         self.config = self._load_config(config_path)
         self.spark = self._init_spark_session()
         self.model = self._load_model(self.config['model']['path'])
@@ -245,5 +245,5 @@ class FraudDetectionInference:
          .awaitTermination())  # Keep the streaming context alive
 
 if __name__ == "__main__":
-    inference = FraudDetectionInference('/app/config_k8s.yaml')
+    inference = FraudDetectionInference('/app/repo/k8s/airflow/dags/config_k8s.yaml')
     inference.run_inference()

@@ -103,7 +103,7 @@ HEALTHCHECK --interval=30s --timeout=10s \
 EXPOSE 8000
 
 # Entrypoint with explicit path
-CMD ["spark-submit", \
-    "--conf", "spark.driver.defaultJavaOptions=-Dlog4j2.configuration=file:/spark/conf/log4j2.properties", \
-    "--conf", "spark.sql.shuffle.partitions=2", \
-    "/app/main.py"]
+#CMD ["spark-submit", \
+    #"--conf", "spark.driver.defaultJavaOptions=-Dlog4j2.configuration=file:/spark/conf/log4j2.properties", \
+    #"--conf", "spark.sql.shuffle.partitions=2", \
+    #"/app/main.py"]

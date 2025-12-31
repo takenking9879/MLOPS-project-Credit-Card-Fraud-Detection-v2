@@ -31,6 +31,14 @@ spec:
       image: takenking9879/inference-server:latest
       imagePullPolicy: IfNotPresent
 
+      command: ["spark-submit"]
+      args:
+        - "--conf"
+        - "spark.driver.defaultJavaOptions=-Dlog4j2.configuration=file:/spark/conf/log4j2.properties"
+        - "--conf"
+        - "spark.sql.shuffle.partitions=2"
+        - "/app/repo/k8s/inference/main.py"
+
       env:
         - name: AWS_ACCESS_KEY_ID
           valueFrom:
@@ -108,7 +116,7 @@ spec:
           memory: 256Mi
 
       env:
-        - name: GIT_SYNC_REPO
+        - name: GITSYNC_REPO
           value: "https://github.com/takenking9879/MLOPS-project-Credit-Card-Fraud-Detection-v2"
 
         - name: GIT_SYNC_BRANCH
@@ -118,12 +126,12 @@ spec:
           value: "/git"
 
         - name: GIT_SYNC_DEST
-          value: "app"
+          value: "repo"
 
         - name: GIT_SYNC_WAIT
           value: "30"   # sync cada 30s
 
-        - name: GIT_SYNC_ONE_TIME
+        - name: GITSYNC_ONE_TIME
           value: "false"
 
       volumeMounts:

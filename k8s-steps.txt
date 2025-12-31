@@ -39,7 +39,7 @@ kubectl cp k8s/airflow/dags/. mlops-fraud/my-airflow-scheduler-787fdd4dd6-jb796:
 
 #### Inferencia
 #Tener volumenes para guardar modelos
-#kubectl apply -f k8s/inference/spark-checkpoints-pvc.yaml
+kubectl apply -f k8s/inference/spark-checkpoints-pvc.yaml -n mlops-fraud
 
 #Adjuntar los archivos al este
 kubectl create configmap inference-app-files \

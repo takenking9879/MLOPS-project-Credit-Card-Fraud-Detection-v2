@@ -51,3 +51,9 @@ variable "mlflow_bucket_name" {
   type        = string
   default     = ""
 }
+
+variable "github_actions_role_arn" {
+  description = "Optional: IAM Role ARN assumed by GitHub Actions (AWS_ROLE_TO_ASSUME). If set, Terraform grants it EKS cluster-admin via Access Entries so CI kubectl/helm can authenticate."
+  type        = string
+  default     = "arn:aws:iam::797926359381:role/eks-terraform-cicd"
+}

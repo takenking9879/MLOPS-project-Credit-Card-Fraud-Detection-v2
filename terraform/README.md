@@ -10,6 +10,8 @@ Uso rápido
 ----------
 1) Edita valores:
    - Copia terraform.tfvars.example -> terraform.tfvars y ajusta.
+   - Si vas a desplegar con GitHub Actions, setea `github_actions_role_arn` (el mismo ARN que pones en `AWS_ROLE_TO_ASSUME`).
+     Esto crea el Access Entry para que `kubectl/helm` en CI no falle con “the server has asked for the client to provide credentials”.
 
 2) Inicializa y aplica:
    - terraform init

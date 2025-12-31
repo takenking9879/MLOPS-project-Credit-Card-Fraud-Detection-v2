@@ -98,7 +98,28 @@ jobs:
         run: |
           helm upgrade --install ingress-nginx ingress-nginx \
             --repo https://kubernetes.github.io/ingress-nginx \
-            --namespace ingress-nginx --create-namespace
+            --namespace ingress-nginx --create-namespace \
+            --wait --timeout 10m
+
+      - name: Wait for ingress-nginx admission webhook
+        run: |
+          kubectl -n ingress-nginx rollout status deployment/ingress-nginx-controller --timeout=10m
+
+          echo "Waiting for ingress-nginx-controller-admission endpoints..."
+          for i in $(seq 1 60); do
+            endpoints=$(kubectl -n ingress-nginx get endpoints ingress-nginx-controller-admission -o jsonpath='{.subsets[*].addresses[*].ip}' 2>/dev/null || true)
+            if [ -n "$endpoints" ]; then
+              echo "Admission endpoints ready: $endpoints"
+              exit 0
+            fi
+            sleep 5
+          done
+
+          echo "Timed out waiting for ingress-nginx admission endpoints"
+          kubectl -n ingress-nginx get pods -o wide || true
+          kubectl -n ingress-nginx describe svc ingress-nginx-controller-admission || true
+          kubectl -n ingress-nginx get endpoints ingress-nginx-controller-admission -o yaml || true
+          exit 1
 
       - name: Install ingress rules
         run: |

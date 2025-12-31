@@ -63,6 +63,32 @@ module "eks" {
   vpc_id     = module.vpc.vpc_id
   subnet_ids = module.vpc.private_subnets
 
+  # GitHub-hosted runners are outside the VPC; they can't reach a private-only endpoint.
+  # Enable the public endpoint so CI can run kubectl/helm.
+  cluster_endpoint_public_access  = true
+  cluster_endpoint_private_access = true
+  # NOTE: This is intentionally wide to avoid GitHub IP allowlist churn.
+  # If you want to lock it down later, switch to a self-hosted runner in the VPC or set a fixed CIDR.
+  cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
+
+  # Use EKS Access Entries so the GitHub Actions role can authenticate to the cluster.
+  authentication_mode = "API_AND_CONFIG_MAP"
+
+  access_entries = var.github_actions_role_arn == "" ? {} : {
+    github_actions = {
+      principal_arn = var.github_actions_role_arn
+
+      policy_associations = {
+        cluster_admin = {
+          policy_arn = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = {
+            type = "cluster"
+          }
+        }
+      }
+    }
+  }
+
   enable_irsa = true
 
   eks_managed_node_groups = {

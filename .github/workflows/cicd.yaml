@@ -105,6 +105,28 @@ jobs:
           kubectl -n mlops-fraud wait --for=jsonpath='{.status.phase}'=Bound pvc/models-pvc --timeout=10m
           kubectl -n mlops-fraud wait --for=jsonpath='{.status.phase}'=Bound pvc/spark-checkpoints-pvc --timeout=10m
 
+      - name: Pre-clean stuck secrets (Airflow/MLflow)
+        run: |
+          set -euo pipefail
+
+          airflow_status=$(helm -n mlops-fraud status my-airflow -o json 2>/dev/null | jq -r '.info.status' || true)
+          if [ "$airflow_status" = "failed" ]; then
+            echo "Airflow release is failed; deleting known leftover secrets..."
+            helm uninstall my-airflow -n mlops-fraud
+            kubectl delete pod my-airflow-redis-0 -n mlops-fraud --ignore-not-found
+            kubectl -n mlops-fraud delete secret my-airflow-broker-url my-airflow-fernet-key my-airflow-redis-password --ignore-not-found
+          else
+            echo "Airflow release status: ${airflow_status:-not-installed} (no cleanup)"
+          fi
+
+          mlflow_status=$(helm -n mlops-fraud status my-mlflow -o json 2>/dev/null | jq -r '.info.status' || true)
+          if [ "$mlflow_status" = "failed" ]; then
+            echo "MLflow release is failed; deleting known leftover secret..."
+            kubectl -n mlops-fraud delete secret my-mlflow-flask-server-secret-key --ignore-not-found
+          else
+            echo "MLflow release status: ${mlflow_status:-not-installed} (no cleanup)"
+          fi
+
       - name: Install ingress-nginx
         run: |
           helm upgrade --install ingress-nginx ingress-nginx \
@@ -136,27 +158,6 @@ jobs:
         run: |
           helm upgrade --install ingress-rule ./k8s_prod/ingress-rules -n mlops-fraud
 
-      - name: Pre-clean stuck secrets (Airflow/MLflow)
-        run: |
-          set -euo pipefail
-
-          airflow_status=$(helm -n mlops-fraud status my-airflow -o json 2>/dev/null | jq -r '.info.status' || true)
-          if [ "$airflow_status" = "failed" ]; then
-            echo "Airflow release is failed; deleting known leftover secrets..."
-            helm uninstall my-airflow -n mlops-fraud
-            kubectl -n mlops-fraud delete secret my-airflow-broker-url my-airflow-fernet-key my-airflow-redis-password --ignore-not-found
-          else
-            echo "Airflow release status: ${airflow_status:-not-installed} (no cleanup)"
-          fi
-
-          mlflow_status=$(helm -n mlops-fraud status my-mlflow -o json 2>/dev/null | jq -r '.info.status' || true)
-          if [ "$mlflow_status" = "failed" ]; then
-            echo "MLflow release is failed; deleting known leftover secret..."
-            kubectl -n mlops-fraud delete secret my-mlflow-flask-server-secret-key --ignore-not-found
-          else
-            echo "MLflow release status: ${mlflow_status:-not-installed} (no cleanup)"
-          fi
-
       - name: Install PostgreSQL (Bitnami)
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
@@ -179,16 +180,13 @@ jobs:
         run: |
           helm repo add apache-airflow https://airflow.apache.org
           helm repo update
-          helm install my-airflow apache-airflow/airflow --namespace mlops-fraud -f k8s_prod/airflow/airflow_values.yaml \
-            --wait --timeout 3m
+          helm install my-airflow apache-airflow/airflow --namespace mlops-fraud -f k8s_prod/airflow/airflow_values.yaml
 
       - name: Diagnostics (Airflow/Postgres/PVC)
         if: failure()
         run: |
           echo "=== PVCs ==="
           kubectl -n mlops-fraud get pvc -o wide || true
-          kubectl -n mlops-fraud describe pvc models-pvc || true
-          kubectl -n mlops-fraud describe pvc spark-checkpoints-pvc || true
 
           echo "=== Pods (mlops-fraud) ==="
           kubectl -n mlops-fraud get pods -o wide || true
@@ -199,9 +197,6 @@ jobs:
           echo "=== Helm status (airflow/postgres) ==="
           helm -n mlops-fraud status my-airflow || true
           helm -n mlops-fraud status postgres || true
-
-          echo "=== Airflow hook jobs (if any) ==="
-          kubectl -n mlops-fraud get jobs -o wide || true
 
       - name: Apply inference pod
         run: |

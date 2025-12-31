@@ -32,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 class FraudDetectionTraining:
 
-    def __init__(self, config_path='dags/config_k8s.yaml'):
+    def __init__(self, config_path='dags/repo/k8s/airflow/dags/config_k8s.yaml'): #dags/config_k8s.yam
         os.environ['GIT_PYTHON_REFRESH'] = 'quiet'
         os.environ['GIT_PYTHON_GIT_EXECUTABLE'] = '/usr/bin/git'
 

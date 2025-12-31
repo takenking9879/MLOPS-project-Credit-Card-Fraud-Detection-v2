@@ -6,7 +6,7 @@ kubectl create namespace mlops-fraud
 kubectl create secret generic env-secret --from-env-file=src/.env -n mlops-fraud
 
 #Tener volumenes para guardar modelos
-#kubectl apply -f k8s/airflow/models-pvc.yaml -n mlops-fraud
+kubectl apply -f k8s/airflow/models-pvc.yaml -n mlops-fraud
 
 #instalar airflow
 helm install my-airflow apache-airflow/airflow --namespace mlops-fraud -f k8s/airflow/airflow_values.yaml

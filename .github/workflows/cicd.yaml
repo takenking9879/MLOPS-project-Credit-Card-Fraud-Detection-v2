@@ -94,6 +94,17 @@ jobs:
           kubectl apply -f k8s_prod/airflow/models-pvc.yaml -n mlops-fraud
           kubectl apply -f k8s_prod/inference/spark-checkpoints-pvc.yaml -n mlops-fraud
 
+      - name: Wait for EFS CSI + PVCs
+        run: |
+          # EFS CSI is installed as an EKS addon by Terraform, but it may take a bit to become ready.
+          kubectl -n kube-system rollout status deployment/efs-csi-controller --timeout=10m || true
+          kubectl -n kube-system get pods -l app=efs-csi-controller -o wide || true
+          kubectl -n kube-system get pods -l app=efs-csi-node -o wide || true
+
+          echo "Waiting for PVCs to be Bound..."
+          kubectl -n mlops-fraud wait --for=jsonpath='{.status.phase}'=Bound pvc/models-pvc --timeout=10m
+          kubectl -n mlops-fraud wait --for=jsonpath='{.status.phase}'=Bound pvc/spark-checkpoints-pvc --timeout=10m
+
       - name: Install ingress-nginx
         run: |
           helm upgrade --install ingress-nginx ingress-nginx \
@@ -129,7 +140,8 @@ jobs:
         run: |
           helm repo add bitnami https://charts.bitnami.com/bitnami
           helm repo update
-          helm upgrade --install postgres bitnami/postgresql -n mlops-fraud -f k8s/postgres/postgres_values.yaml
+          helm upgrade --install postgres bitnami/postgresql -n mlops-fraud -f k8s/postgres/postgres_values.yaml \
+            --wait --timeout 10m
 
       - name: Install MLflow (S3)
         run: |
@@ -146,7 +158,29 @@ jobs:
         run: |
           helm repo add apache-airflow https://airflow.apache.org
           helm repo update
-          helm upgrade --install my-airflow apache-airflow/airflow --namespace mlops-fraud -f k8s_prod/airflow/airflow_values.yaml
+          helm upgrade --install my-airflow apache-airflow/airflow --namespace mlops-fraud -f k8s_prod/airflow/airflow_values.yaml \
+            --wait --timeout 15m
+
+      - name: Diagnostics (Airflow/Postgres/PVC)
+        if: failure()
+        run: |
+          echo "=== PVCs ==="
+          kubectl -n mlops-fraud get pvc -o wide || true
+          kubectl -n mlops-fraud describe pvc models-pvc || true
+          kubectl -n mlops-fraud describe pvc spark-checkpoints-pvc || true
+
+          echo "=== Pods (mlops-fraud) ==="
+          kubectl -n mlops-fraud get pods -o wide || true
+
+          echo "=== Events (mlops-fraud) ==="
+          kubectl -n mlops-fraud get events --sort-by=.lastTimestamp | tail -n 200 || true
+
+          echo "=== Helm status (airflow/postgres) ==="
+          helm -n mlops-fraud status my-airflow || true
+          helm -n mlops-fraud status postgres || true
+
+          echo "=== Airflow hook jobs (if any) ==="
+          kubectl -n mlops-fraud get jobs -o wide || true
 
       - name: Apply inference pod
         run: |

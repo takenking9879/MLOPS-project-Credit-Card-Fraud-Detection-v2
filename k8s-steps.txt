@@ -1,12 +1,15 @@
+# Crear namespace
+kubectl create namespace mlops-fraud
+
 #### instalar airflow
 #Crear configuracion
-kubectl create secret generic env-secret \
-  --from-env-file=src/.env \
-  -n mlops-fraud
+kubectl create secret generic env-secret --from-env-file=src/.env -n mlops-fraud
 
+#Tener volumenes para guardar modelos
+#kubectl apply -f k8s/airflow/models-pvc.yaml -n mlops-fraud
 
 #instalar airflow
-helm install my-airflow apache-airflow/airflow --namespace mlops-fraud --create-namespace -f k8s/airflow/airflow_values.yaml
+helm install my-airflow apache-airflow/airflow --namespace mlops-fraud -f k8s/airflow/airflow_values.yaml
 
 #Borrar archivos residuales que no borra el uninstall
 helm uninstall my-airflow -n mlops-fraud
@@ -14,10 +17,12 @@ kubectl delete secret my-airflow-broker-url my-airflow-fernet-key my-airflow-red
 
 ##### mlflow
 # Instalar postgreSQL
-helm install postgres bitnami/postgresql -n mlops-fraud
+helm install postgres bitnami/postgresql -n mlops-fraud -f k8s/postgres/postgres_values.yaml
 
 # Instalar mlflow
 helm install my-mlflow community-charts/mlflow -f k8s/mlflow/mlflow_values.yaml -n mlops-fraud
+
+kubectl delete secret my-mlflow-flask-server-secret-key -n mlops-fraud
 
 ##### Controller
 # Instalar el controller ingress
@@ -27,11 +32,30 @@ helm install ingress-rule ./k8s/ingress-rules -n mlops-fraud
 # Instalar minio
 helm install my-minio oci://registry-1.docker.io/cloudpirates/minio --version 0.5.6 -f k8s/minio/minio_values.yaml -n mlops-fraud
 
+# Copiar dags dentro de contenedor (solo si usas PV y PVC, sino usa GitSync)
+kubectl cp k8s/airflow/dags/. mlops-fraud/my-airflow-worker-0:/opt/airflow/dags
+kubectl cp k8s/airflow/dags/. mlops-fraud/my-airflow-api-server-5bc4c89cd-2kgk9:/opt/airflow/dags
+kubectl cp k8s/airflow/dags/. mlops-fraud/my-airflow-scheduler-787fdd4dd6-jb796:/opt/airflow/dags
+
+#### Inferencia
+#Tener volumenes para guardar modelos
+#kubectl apply -f k8s/inference/spark-checkpoints-pvc.yaml
+
+#Adjuntar los archivos al este
+kubectl create configmap inference-app-files \
+  --from-file=k8s/airflow/dags/config_k8s.yaml \
+  --from-file=k8s/inference/main.py \
+  -n mlops-fraud
+
+#inference
+kubectl apply -f k8s/inference/inference_values.yaml -n mlops-fraud
+
 
 #En kafka
 - Environment: FraudDetection
 - Cluster: fraud_detection_cluster
 - topic: transactions
+- output_topic: fraud_predictions
 
 # Generar y Correr el producer
 #Generar imagen
@@ -39,7 +63,7 @@ docker build -t k8s-producer src/./producer
 #Correr imagen
 docker run -d \
   --name producer \
-  --env-file .env \
+  --env-file src/.env \
   --cpus="1" \
   --memory="1g" \
   k8s-producer 

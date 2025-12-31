@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: inference-pod
+  namespace: mlops-fraud
+  labels:
+    app: inference-debug
+spec:
+  restartPolicy: Always
+
+  securityContext:
+    fsGroup: 1000   # MUY IMPORTANTE para Spark
+
+  volumes:
+    - name: models-vol
+      persistentVolumeClaim:
+        claimName: models-pvc
+
+    - name: spark-checkpoints
+      persistentVolumeClaim:
+        claimName: spark-checkpoints-pvc
+
+    - name: app-files
+      emptyDir: {}   # 👈 git-sync escribe aquí
+
+  containers:
+    # ======================
+    # INFERENCE CONTAINER
+    # ======================
+    - name: inference
+      image: takenking9879/inference-server:latest
+      imagePullPolicy: IfNotPresent
+
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: AWS_SECRET_ACCESS_KEY
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: KAFKA_BOOTSTRAP_SERVERS
+        - name: KAFKA_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: KAFKA_USERNAME
+        - name: KAFKA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: KAFKA_PASSWORD
+        - name: KAFKA_TOPIC
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: KAFKA_TOPIC
+        - name: MINIO_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: MINIO_USERNAME
+        - name: MINIO_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: MINIO_PASSWORD
+
+      resources:
+        requests:
+          cpu: "2"
+          memory: 2Gi
+        limits:
+          cpu: "3"
+          memory: 3Gi
+
+      volumeMounts:
+        - name: models-vol
+          mountPath: /models
+          readOnly: true
+
+        - name: app-files
+          mountPath: /app   # 👈 código viene de git
+          readOnly: false
+
+        - name: spark-checkpoints
+          mountPath: /mnt/checkpoints
+
+    # ======================
+    # GIT-SYNC SIDECAR
+    # ======================
+    - name: git-sync
+      image: registry.k8s.io/git-sync/git-sync:v4.1.0
+
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+
+      env:
+        - name: GIT_SYNC_REPO
+          value: "https://github.com/tu-org/tu-repo.git"
+
+        - name: GIT_SYNC_BRANCH
+          value: "main"
+
+        - name: GIT_SYNC_ROOT
+          value: "/git"
+
+        - name: GIT_SYNC_DEST
+          value: "app"
+
+        - name: GIT_SYNC_WAIT
+          value: "30"   # sync cada 30s
+
+        - name: GIT_SYNC_ONE_TIME
+          value: "false"
+
+      volumeMounts:
+        - name: app-files
+          mountPath: /git

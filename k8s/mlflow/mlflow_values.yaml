@@ -17,9 +17,9 @@ artifactRoot:
     awsSecretAccessKey: minio123
 
 extraEnvVars:
-  MLFLOW_S3_ENDPOINT_URL: http://minio-service:9000
+  MLFLOW_S3_ENDPOINT_URL: http://my-minio:9000
   MLFLOW_S3_IGNORE_TLS: "true"
-  MLFLOW_SERVER_ALLOWED_HOSTS: "mlflow.localhost"
+  MLFLOW_SERVER_ALLOWED_HOSTS: "my-mlflow"
 
 extraSecretNamesForEnvFrom:
   - env-secret

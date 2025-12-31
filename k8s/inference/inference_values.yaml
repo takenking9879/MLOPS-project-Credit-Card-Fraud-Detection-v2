@@ -1,0 +1,92 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: inference-pod
+  namespace: mlops-fraud
+  labels:
+    app: inference-debug
+spec:
+  restartPolicy: Always
+
+  securityContext:
+    fsGroup: 1000   # MUY IMPORTANTE para Spark
+
+  containers:
+    - name: inference
+      image: takenking9879/inference-server:latest
+      imagePullPolicy: IfNotPresent
+
+      env:
+        - name: AWS_ACCESS_KEY_ID
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: AWS_ACCESS_KEY_ID
+        - name: AWS_SECRET_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: AWS_SECRET_ACCESS_KEY
+        - name: KAFKA_BOOTSTRAP_SERVERS
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: KAFKA_BOOTSTRAP_SERVERS
+        - name: KAFKA_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: KAFKA_USERNAME
+        - name: KAFKA_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: KAFKA_PASSWORD
+        - name: KAFKA_TOPIC
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: KAFKA_TOPIC
+        - name: MINIO_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: MINIO_USERNAME
+        - name: MINIO_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: env-secret
+              key: MINIO_PASSWORD
+
+      resources:
+        requests:
+          cpu: "2"
+          memory: 2Gi
+        limits:
+          cpu: "3"
+          memory: 3Gi
+
+      volumeMounts:
+        - name: models-vol
+          mountPath: /models
+          readOnly: true
+
+        - name: app-files
+          mountPath: /app
+          readOnly: true
+
+        - name: spark-checkpoints
+          mountPath: /mnt/checkpoints   # 👈 Spark escribe aquí
+
+  volumes:
+    - name: models-vol
+      persistentVolumeClaim:
+        claimName: models-pvc
+
+    - name: spark-checkpoints
+      persistentVolumeClaim:
+        claimName: spark-checkpoints-pvc
+
+    - name: app-files
+      configMap:
+        name: inference-app-files

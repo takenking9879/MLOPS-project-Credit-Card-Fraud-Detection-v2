@@ -112,8 +112,13 @@ jobs:
           airflow_status=$(helm -n mlops-fraud status my-airflow -o json 2>/dev/null | jq -r '.info.status' || true)
           if [ "$airflow_status" = "failed" ]; then
             echo "Airflow release is failed; deleting known leftover secrets..."
-            helm uninstall my-airflow -n mlops-fraud
-            kubectl delete pod my-airflow-redis-0 -n mlops-fraud --ignore-not-found
+            # Wait for Helm to delete owned resources. Without --wait, the StatefulSet can recreate pods.
+            helm -n mlops-fraud uninstall my-airflow --wait --timeout 40s || true
+
+            # Redis is managed by a StatefulSet; deleting the pod alone will just recreate it.
+            kubectl -n mlops-fraud scale statefulset/my-airflow-redis --replicas=0 --ignore-not-found
+            kubectl -n mlops-fraud delete statefulset my-airflow-redis --ignore-not-found
+            kubectl -n mlops-fraud delete pvc redis-db-my-airflow-redis-0 --ignore-not-found
             kubectl -n mlops-fraud delete secret my-airflow-broker-url my-airflow-fernet-key my-airflow-redis-password --ignore-not-found
           else
             echo "Airflow release status: ${airflow_status:-not-installed} (no cleanup)"

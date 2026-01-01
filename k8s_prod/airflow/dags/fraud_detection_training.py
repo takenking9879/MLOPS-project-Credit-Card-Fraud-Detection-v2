@@ -12,6 +12,7 @@ import json
 from kafka import KafkaConsumer
 from imblearn.over_sampling import SMOTE
 from kafka import KafkaConsumer
+from mlflow.tracking import MlflowClient
 from mlflow.models import infer_signature
 from sklearn.compose import ColumnTransformer
 from sklearn.metrics import make_scorer, fbeta_score, precision_recall_curve, average_precision_score, precision_score, \
@@ -60,7 +61,25 @@ class FraudDetectionTraining:
         self._validate_environment()
 
         mlflow.set_tracking_uri(self.config['mlflow']['tracking_uri'])
+        self._ensure_experiment()
         mlflow.set_experiment(self.config['mlflow']['experiment_name'])
+
+    def _ensure_experiment(self):
+        mlflow_config = self.config['mlflow']
+        client = MlflowClient()
+        experiment = client.get_experiment_by_name(mlflow_config['experiment_name'])
+        if experiment is None:
+            artifact_location = mlflow_config.get('artifact_location')
+            if artifact_location:
+                client.create_experiment(mlflow_config['experiment_name'], artifact_location=artifact_location)
+                logger.info('Created experiment %s with artifact_location %s', mlflow_config['experiment_name'], artifact_location)
+            else:
+                client.create_experiment(mlflow_config['experiment_name'])
+                logger.info('Created experiment %s with default artifact location', mlflow_config['experiment_name'])
+        else:
+            requested_location = mlflow_config.get('artifact_location')
+            if requested_location and experiment.artifact_location != requested_location:
+                logger.warning('Experiment %s already exists with artifact_location %s; requested %s', experiment.name, experiment.artifact_location, requested_location)
 
     def _load_config(self, config_path:str) -> Dict:
         try:

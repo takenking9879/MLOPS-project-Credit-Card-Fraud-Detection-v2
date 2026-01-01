@@ -72,16 +72,24 @@ jobs:
           MLFLOW_S3_BUCKET='${{ secrets.MLFLOW_S3_BUCKET }}'
           MLFLOW_S3_ENDPOINT_URL=""
 
-          kubectl create secret generic env-secret -n mlops-fraud \
-            --from-literal=AWS_ACCESS_KEY_ID='${{ secrets.AWS_ACCESS_KEY_ID }}' \
-            --from-literal=AWS_SECRET_ACCESS_KEY='${{ secrets.AWS_SECRET_ACCESS_KEY }}' \
-            --from-literal=KAFKA_BOOTSTRAP_SERVERS='${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}' \
-            --from-literal=KAFKA_USERNAME='${{ secrets.KAFKA_USERNAME }}' \
-            --from-literal=KAFKA_PASSWORD='${{ secrets.KAFKA_PASSWORD }}' \
-            --from-literal=KAFKA_TOPIC='${{ secrets.KAFKA_TOPIC }}' \
-            --from-literal=MLFLOW_S3_BUCKET="$MLFLOW_S3_BUCKET" \
-            --from-literal=MLFLOW_S3_ENDPOINT_URL="$MLFLOW_S3_ENDPOINT_URL" \
-            --dry-run=client -o yaml | kubectl apply -f -
+          args=(
+            kubectl create secret generic env-secret -n mlops-fraud
+            --from-literal=AWS_ACCESS_KEY_ID='${{ secrets.AWS_ACCESS_KEY_ID }}'
+            --from-literal=AWS_SECRET_ACCESS_KEY='${{ secrets.AWS_SECRET_ACCESS_KEY }}'
+            --from-literal=KAFKA_BOOTSTRAP_SERVERS='${{ secrets.KAFKA_BOOTSTRAP_SERVERS }}'
+            --from-literal=KAFKA_USERNAME='${{ secrets.KAFKA_USERNAME }}'
+            --from-literal=KAFKA_PASSWORD='${{ secrets.KAFKA_PASSWORD }}'
+            --from-literal=KAFKA_TOPIC='${{ secrets.KAFKA_TOPIC }}'
+            --from-literal=MLFLOW_S3_BUCKET="$MLFLOW_S3_BUCKET"
+          )
+
+          if [ -n "$MLFLOW_S3_ENDPOINT_URL" ]; then
+            args+=(--from-literal=MLFLOW_S3_ENDPOINT_URL="$MLFLOW_S3_ENDPOINT_URL")
+          fi
+
+          args+=(--dry-run=client -o yaml)
+
+          "${args[@]}" | kubectl apply -f -
 
       - name: Apply EFS StorageClass (dynamic provisioning)
         env:

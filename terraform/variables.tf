@@ -31,13 +31,13 @@ variable "node_instance_types" {
 variable "node_desired_size" {
   description = "Desired nodes in the default node group"
   type        = number
-  default     = 2
+  default     = 3
 }
 
 variable "node_min_size" {
   description = "Min nodes in the default node group"
   type        = number
-  default     = 1
+  default     = 2
 }
 
 variable "node_max_size" {

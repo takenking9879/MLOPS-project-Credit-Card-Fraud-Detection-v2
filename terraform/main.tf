@@ -23,6 +23,11 @@ locals {
     0,
     63
   )
+
+  eks_admin_principals = toset(compact(concat(
+    var.eks_admin_principals,
+    var.github_actions_role_arn != "" ? [var.github_actions_role_arn] : []
+  )))
 }
 
 module "vpc" {
@@ -74,9 +79,13 @@ module "eks" {
   # Use EKS Access Entries so the GitHub Actions role can authenticate to the cluster.
   authentication_mode = "API_AND_CONFIG_MAP"
 
-  access_entries = var.github_actions_role_arn == "" ? {} : {
-    github_actions = {
-      principal_arn = var.github_actions_role_arn
+  access_entries = {
+    for principal_arn in local.eks_admin_principals :
+    (
+      principal_arn == var.github_actions_role_arn && var.github_actions_role_arn != "" ? "github_actions" :
+      "admin-${replace(replace(principal_arn, ":", "-"), "/", "-")}"
+      ) => {
+      principal_arn = principal_arn
 
       policy_associations = {
         cluster_admin = {

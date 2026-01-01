@@ -5,9 +5,18 @@ ingress:
   name: mlops-ingress
   namespace: mlops-fraud
   ingressClassName: nginx
+  # For public access from any computer, set `domain` to your real DNS zone
+  # (e.g. "example.com"). Hosts will become:
+  #   airflow-takenking9879.<domain>
+  #   mlflow-takenking9879.<domain>
+  domain: takenking9879.me
+  subdomain:
+    airflow: airflow
+    mlflow: mlflow
+  # Backward-compatible override (optional). If set, these win over domain/subdomain.
   host:
-    airflow: airflow.localhost
-    mlflow: mlflow.localhost
+    airflow: ""
+    mlflow: ""
 
   # Airflow
   airflowServiceName: my-airflow-api-server

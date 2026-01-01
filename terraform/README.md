@@ -10,8 +10,9 @@ Uso rápido
 ----------
 1) Edita valores:
    - Copia terraform.tfvars.example -> terraform.tfvars y ajusta.
-   - Si vas a desplegar con GitHub Actions, setea `github_actions_role_arn` (el mismo ARN que pones en `AWS_ROLE_TO_ASSUME`).
-     Esto crea el Access Entry para que `kubectl/helm` en CI no falle con “the server has asked for the client to provide credentials”.
+    - Define `eks_admin_principals` con los IAM principal ARNs (roles/usuarios) que necesitan acceso admin al cluster.
+       Esto crea Access Entries para que `kubectl/helm` (CI y local) no fallen con “the server has asked for the client to provide credentials”.
+    - `github_actions_role_arn` queda como variable legacy (single principal) por compatibilidad.
 
 2) Inicializa y aplica:
    - terraform init

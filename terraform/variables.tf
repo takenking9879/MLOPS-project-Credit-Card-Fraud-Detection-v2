@@ -52,8 +52,32 @@ variable "mlflow_bucket_name" {
   default     = ""
 }
 
+variable "eks_admin_principals" {
+  description = "IAM principal ARNs (users/roles) to grant EKS cluster-admin via EKS Access Entries. Useful for local kubectl access and CI roles."
+  type        = list(string)
+  default     = ["arn:aws:iam::797926359381:user/prod-deployment-user"]
+}
+
 variable "github_actions_role_arn" {
-  description = "Optional: IAM Role ARN assumed by GitHub Actions (AWS_ROLE_TO_ASSUME). If set, Terraform grants it EKS cluster-admin via Access Entries so CI kubectl/helm can authenticate."
+  description = "Optional legacy single principal ARN (typically the GitHub Actions role). Prefer eks_admin_principals."
   type        = string
   default     = "arn:aws:iam::797926359381:role/eks-terraform-cicd"
+}
+
+variable "route53_zone_id" {
+  description = "Optional Route53 hosted zone id where public DNS records will be created for Airflow/MLflow. Leave empty to disable DNS management."
+  type        = string
+  default     = ""
+}
+
+variable "airflow_subdomain" {
+  description = "Subdomain label to create for Airflow (record name will be <subdomain>.<zone>)."
+  type        = string
+  default     = "airflow"
+}
+
+variable "mlflow_subdomain" {
+  description = "Subdomain label to create for MLflow (record name will be <subdomain>.<zone>)."
+  type        = string
+  default     = "mlflow"
 }

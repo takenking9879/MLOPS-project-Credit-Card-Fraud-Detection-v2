@@ -217,4 +217,6 @@ jobs:
 
       - name: Apply inference pod
         run: |
+          # Pod specs are mostly immutable; recreate it so CPU/memory changes apply.
+          kubectl -n mlops-fraud delete pod inference-pod --ignore-not-found
           kubectl apply -f k8s_prod/inference/inference_values_gitsync.yaml -n mlops-fraud

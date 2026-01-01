@@ -97,11 +97,11 @@ spec:
 
       resources:
         requests:
-          cpu: "2"
+          cpu: "1"
           memory: 2Gi
         limits:
-          cpu: "3"
-          memory: 3Gi
+          cpu: "2"
+          memory: 2Gi
 
       volumeMounts:
         - name: models-vol

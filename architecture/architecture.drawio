@@ -1,66 +1,148 @@
-<mxfile host="app.diagrams.net" modified="2026-01-01T11:12:00.000Z" agent="5.4.0" etag="x" version="20.8.4" type="device">
-  <diagram name="Architecture" id="diagram-architecture">
-    <mxGraphModel dx="1200" dy="800" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100">
+<mxfile host="app.diagrams.net" modified="2026-01-01T12:05:00.000Z" agent="GitHub Copilot (GPT-5.2)" etag="terraform-eks-arch" version="20.8.4" type="device">
+  <diagram name="Architecture (Terraform-based)" id="diagram-architecture">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1200" pageHeight="800" math="0" shadow="0">
       <root>
         <mxCell id="0"/>
         <mxCell id="1" parent="0"/>
-        <mxCell id="2" value="EKS Cluster" style="rounded=1;fillColor=#dce7ff;strokeColor=#3474eb;fontSize=18;fontStyle=1" vertex="1" parent="1">
-          <mxGeometry x="20" y="20" width="600" height="360" as="geometry"/>
+
+        <!-- ====== Top-level containers ====== -->
+        <mxCell id="aws" value="AWS Account / Region (us-east-2)\nProvisioned with Terraform" style="swimlane;rounded=1;startSize=34;fillColor=#f7f8fa;strokeColor=#111827;fontColor=#111827;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="20" y="20" width="980" height="720" as="geometry"/>
         </mxCell>
-        <mxCell id="3" value="Airflow + DAGs" style="rounded=1;fillColor=#ffffff;strokeColor=#1a73e8" vertex="1" parent="2">
-          <mxGeometry x="40" y="40" width="220" height="140" as="geometry"/>
+
+        <mxCell id="external" value="External Services" style="swimlane;rounded=1;startSize=34;fillColor=#ffffff;strokeColor=#111827;fontColor=#111827;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="20" width="320" height="720" as="geometry"/>
         </mxCell>
-        <mxCell id="4" value="MLflow Tracking" style="rounded=1;fillColor=#ffffff;strokeColor=#0f9d58" vertex="1" parent="2">
-          <mxGeometry x="40" y="200" width="220" height="120" as="geometry"/>
+
+        <!-- ====== VPC ====== -->
+        <mxCell id="vpc" value="VPC (10.0.0.0/16)\nPublic + Private Subnets (3 AZs) + NAT" style="swimlane;rounded=1;startSize=34;fillColor=#ffffff;strokeColor=#879196;fontColor=#232F3E;fontStyle=1;" vertex="1" parent="aws">
+          <mxGeometry x="20" y="60" width="680" height="640" as="geometry"/>
         </mxCell>
-        <mxCell id="5" value="Inference Pod" style="rounded=1;fillColor=#fff2cc;strokeColor=#fbbc05" vertex="1" parent="2">
-          <mxGeometry x="300" y="70" width="240" height="120" as="geometry"/>
+
+        <mxCell id="public" value="Public subnets\n(tag: kubernetes.io/role/elb=1)" style="swimlane;rounded=1;startSize=28;fillColor=#ffffff;strokeColor=#879196;fontColor=#232F3E;fontStyle=1;" vertex="1" parent="vpc">
+          <mxGeometry x="20" y="50" width="310" height="560" as="geometry"/>
         </mxCell>
-        <mxCell id="6" value="Kafka Topic" style="rounded=1;fillColor=#fce8f5;strokeColor=#d500f9" vertex="1" parent="2">
-          <mxGeometry x="300" y="220" width="240" height="120" as="geometry"/>
+
+        <mxCell id="private" value="Private subnets\n(tag: kubernetes.io/role/internal-elb=1)" style="swimlane;rounded=1;startSize=28;fillColor=#ffffff;strokeColor=#879196;fontColor=#232F3E;fontStyle=1;" vertex="1" parent="vpc">
+          <mxGeometry x="350" y="50" width="310" height="560" as="geometry"/>
         </mxCell>
-        <mxCell id="7" value="Terraform / GitHub Actions" style="rounded=1;fillColor=#e8f0fe;strokeColor=#1967d2" vertex="1" parent="1">
-          <mxGeometry x="660" y="40" width="260" height="80" as="geometry"/>
+
+        <!-- ====== EKS ====== -->
+        <mxCell id="eks" value="Amazon EKS (Control Plane)\nPublic + Private API endpoint\nAuth: EKS Access Entries (cluster-admin)" style="outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;whiteSpace=wrap;aspect=fixed;shape=mxgraph.aws3.ecs;fillColor=#F58534;gradientColor=none;fontColor=#232F3E;fontStyle=1;" vertex="1" parent="aws">
+          <mxGeometry x="720" y="90" width="240" height="140" as="geometry"/>
         </mxCell>
-        <mxCell id="8" value="PostgreSQL (Bitnami)" style="rounded=1;fillColor=#f1f8e9;strokeColor=#0f9d58" vertex="1" parent="1">
-          <mxGeometry x="660" y="140" width="240" height="90" as="geometry"/>
+
+        <mxCell id="nodegroup" value="EKS Managed Node Group (default)\nInstance types: m7i-flex.large\nmin/desired/max: 3/3/4\nAMI: AL2023" style="outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;whiteSpace=wrap;aspect=fixed;shape=mxgraph.aws3.ec2;fillColor=#F58534;gradientColor=none;fontColor=#232F3E;fontStyle=1;" vertex="1" parent="private">
+          <mxGeometry x="20" y="60" width="270" height="130" as="geometry"/>
         </mxCell>
-        <mxCell id="9" value="S3 Bucket (MLflow Artifacts)" style="rounded=1;fillColor=#f3e5f5;strokeColor=#8e24aa" vertex="1" parent="1">
-          <mxGeometry x="660" y="250" width="240" height="90" as="geometry"/>
+
+        <mxCell id="addons" value="EKS Add-ons (Terraform)\n- aws-ebs-csi-driver (IRSA)\n- aws-efs-csi-driver (IRSA)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#879196;fontColor=#232F3E;fontStyle=1;" vertex="1" parent="private">
+          <mxGeometry x="20" y="200" width="270" height="90" as="geometry"/>
         </mxCell>
-        <mxCell id="10" value="EFS (PVC Backing)" style="rounded=1;fillColor=#e0f7fa;strokeColor=#0097a7" vertex="1" parent="1">
-          <mxGeometry x="660" y="360" width="240" height="80" as="geometry"/>
+
+        <!-- ====== Kubernetes workloads ====== -->
+        <mxCell id="ns" value="Kubernetes namespace: mlops-fraud\nApps deployed with Helm/manifests" style="swimlane;rounded=1;startSize=30;fillColor=#ffffff;strokeColor=#111827;fontColor=#111827;fontStyle=1;" vertex="1" parent="private">
+          <mxGeometry x="20" y="300" width="270" height="240" as="geometry"/>
         </mxCell>
-        <mxCell id="11" value="AWS Kinesis / Kafka Cluster" style="ellipse;fillColor=#ffe0b2;strokeColor=#f57c00" vertex="1" parent="1">
-          <mxGeometry x="300" y="420" width="220" height="80" as="geometry"/>
+
+        <mxCell id="airflow" value="Airflow (Helm)\nTraining DAGs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eff6ff;strokeColor=#1d4ed8;fontColor=#111827;fontStyle=1;" vertex="1" parent="ns">
+          <mxGeometry x="16" y="42" width="238" height="56" as="geometry"/>
         </mxCell>
-        <mxCell id="12" value="GitHub Actions CI/CD" style="text;html=1;align=center;verticalAlign=middle;" vertex="1" parent="7">
-          <mxGeometry x="0" y="0" width="260" height="80" as="geometry"/>
+
+        <mxCell id="mlflow" value="MLflow Tracking/Registry (Helm)\nArtifacts → S3" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ecfdf5;strokeColor=#047857;fontColor=#111827;fontStyle=1;" vertex="1" parent="ns">
+          <mxGeometry x="16" y="106" width="238" height="56" as="geometry"/>
         </mxCell>
-        <mxCell id="13" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1967d2;exitX=1;exitY=0.5;exitPerimeter=1;entryX=0;entryY=0.5;entryPerimeter=1" edge="1" parent="1" source="7" target="3">
+
+        <mxCell id="postgres" value="PostgreSQL (Helm)\nBackend for MLflow" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f3ff;strokeColor=#6d28d9;fontColor=#111827;fontStyle=1;" vertex="1" parent="ns">
+          <mxGeometry x="16" y="170" width="238" height="50" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="inference" value="Inference (Spark Streaming)\nConsumes: transactions\nProduces: fraud_predictions" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#c2410c;fontColor=#111827;fontStyle=1;" vertex="1" parent="ns">
+          <mxGeometry x="16" y="228" width="238" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- ====== Networking ingress ====== -->
+        <mxCell id="ingress" value="ingress-nginx Service (LoadBalancer)\nCreates AWS LB in public subnets" style="outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;whiteSpace=wrap;aspect=fixed;shape=mxgraph.aws3.elastic_load_balancing;fillColor=#F58534;gradientColor=none;fontColor=#232F3E;fontStyle=1;" vertex="1" parent="public">
+          <mxGeometry x="20" y="90" width="270" height="70" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="nat" value="NAT Gateway (single)" style="outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;whiteSpace=wrap;aspect=fixed;shape=mxgraph.aws3.vpc_nat_gateway;fillColor=#F58536;gradientColor=none;fontColor=#232F3E;fontStyle=1;" vertex="1" parent="public">
+          <mxGeometry x="20" y="170" width="270" height="50" as="geometry"/>
+        </mxCell>
+
+        <!-- ====== Storage ====== -->
+        <mxCell id="s3" value="S3 Bucket (Terraform)\nMLflow artifacts\n- Versioning\n- SSE-S3 (AES256)\n- Block public access" style="outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;whiteSpace=wrap;aspect=fixed;shape=mxgraph.aws3.s3;fillColor=#E05243;gradientColor=none;fontColor=#232F3E;fontStyle=1;" vertex="1" parent="aws">
+          <mxGeometry x="720" y="250" width="240" height="130" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="efs" value="EFS (Terraform)\nEncrypted + mount targets\nUsed for RWX PVCs" style="outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;whiteSpace=wrap;aspect=fixed;shape=mxgraph.aws3.efs_share;fillColor=#E05243;gradientColor=none;fontColor=#232F3E;fontStyle=1;" vertex="1" parent="aws">
+          <mxGeometry x="720" y="400" width="240" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- ====== DNS (optional) ====== -->
+        <mxCell id="route53" value="Route53 (optional)\nCreates A-records → ingress LB\n- airflow.&lt;zone&gt;\n- mlflow.&lt;zone&gt;" style="outlineConnect=0;dashed=0;verticalLabelPosition=bottom;verticalAlign=top;align=center;html=1;whiteSpace=wrap;aspect=fixed;shape=mxgraph.aws3.route_53;fillColor=#F58536;gradientColor=none;fontColor=#232F3E;fontStyle=1;" vertex="1" parent="aws">
+          <mxGeometry x="720" y="530" width="240" height="110" as="geometry"/>
+        </mxCell>
+
+        <!-- ====== CI/CD ====== -->
+        <mxCell id="gha" value="GitHub Actions\nRole: eks-terraform-cicd\n- Terraform apply\n- kubectl/helm deploy" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#eef2ff;strokeColor=#3730a3;fontColor=#111827;fontStyle=1;" vertex="1" parent="aws">
+          <mxGeometry x="720" y="660" width="240" height="80" as="geometry"/>
+        </mxCell>
+
+        <!-- ====== External Kafka ====== -->
+        <mxCell id="kafka" value="Kafka Cluster (external)\nTopic: transactions\nTopic: fraud_predictions\nAuth: SASL_SSL" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff7ed;strokeColor=#9a3412;fontColor=#111827;fontStyle=1;" vertex="1" parent="external">
+          <mxGeometry x="30" y="70" width="260" height="120" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="users" value="Users / Browser" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#111827;fontColor=#111827;fontStyle=1;" vertex="1" parent="external">
+          <mxGeometry x="30" y="220" width="260" height="60" as="geometry"/>
+        </mxCell>
+
+        <!-- ====== Edges ====== -->
+        <mxCell id="e1" value="deploy" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#3730a3;fontColor=#3730a3;endArrow=block;endFill=1;" edge="1" parent="1" source="gha" target="eks">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="14" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#0f9d58;exitX=1;exitY=0.4;exitPerimeter=1;entryX=0;entryY=0.4;entryPerimeter=1" edge="1" parent="1" source="7" target="4">
+
+        <mxCell id="e2" value="ingress" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#2563eb;fontColor=#2563eb;endArrow=block;endFill=1;" edge="1" parent="1" source="users" target="ingress">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#fbbc05;exitX=1;exitY=0.5;entryX=0.5;entryY=0;entryPerimeter=1" edge="1" parent="2" source="5" target="6">
+
+        <mxCell id="e3" value="UI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#2563eb;fontColor=#2563eb;endArrow=block;endFill=1;" edge="1" parent="1" source="ingress" target="airflow">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="16" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#8e24aa;entryX=0;entryY=0.5;entryPerimeter=1" edge="1" parent="1" source="4" target="9">
+
+        <mxCell id="e4" value="UI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#2563eb;fontColor=#2563eb;endArrow=block;endFill=1;" edge="1" parent="1" source="ingress" target="mlflow">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="17" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#0f9d58;entryX=0.3;entryY=0;entryPerimeter=1" edge="1" parent="1" source="3" target="8">
+
+        <mxCell id="e5" value="runs + artifacts" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#E05243;fontColor=#E05243;endArrow=block;endFill=1;" edge="1" parent="1" source="mlflow" target="s3">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="18" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#0097a7;entryX=0;entryY=0.3;entryPerimeter=1" edge="1" parent="1" source="5" target="10">
+
+        <mxCell id="e6" value="metadata" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#6d28d9;fontColor=#6d28d9;endArrow=block;endFill=1;" edge="1" parent="1" source="mlflow" target="postgres">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="19" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#d500f9;entryX=0;entryY=0.5;entryPerimeter=1" edge="1" parent="1" source="3" target="6">
+
+        <mxCell id="e7" value="train" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#1d4ed8;fontColor=#1d4ed8;endArrow=block;endFill=1;" edge="1" parent="1" source="airflow" target="mlflow">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
-        <mxCell id="20" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#ff6d00;entryX=0;entryY=0.5;entryPerimeter=1" edge="1" parent="1" source="5" target="11">
+
+        <mxCell id="e8" value="consume" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#9a3412;fontColor=#9a3412;endArrow=block;endFill=1;" edge="1" parent="1" source="inference" target="kafka">
           <mxGeometry relative="1" as="geometry"/>
         </mxCell>
+
+        <mxCell id="e9" value="events" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#9a3412;fontColor=#9a3412;endArrow=block;endFill=1;" edge="1" parent="1" source="kafka" target="airflow">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e10" value="checkpoints / models" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#E05243;fontColor=#E05243;endArrow=block;endFill=1;" edge="1" parent="1" source="ns" target="efs">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
+        <mxCell id="e11" value="DNS" style="edgeStyle=orthogonalEdgeStyle;rounded=0;strokeColor=#be123c;fontColor=#be123c;endArrow=block;endFill=1;dashed=1;" edge="1" parent="1" source="route53" target="ingress">
+          <mxGeometry relative="1" as="geometry"/>
+        </mxCell>
+
       </root>
     </mxGraphModel>
   </diagram>

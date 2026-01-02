@@ -1,203 +1,236 @@
-<!--
-Tip: este README está pensado para verse bien en GitHub.
-Si quieres mostrar el diagrama, exporta `architecture/architecture.drawio` a PNG/SVG.
--->
-
-# 🛡️ MLOPS-project-Credit-Card-Fraud-Detection-v2
+# 🛡️ MLOps – Real-Time Credit Card Fraud Detection (v2)
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Python-3.11-blue?logo=python" />
-  <img src="https://img.shields.io/badge/Airflow-3.x-yellow?logo=apache-airflow" />
-  <img src="https://img.shields.io/badge/Spark-4.0.1-orange?logo=apache-spark" />
-  <img src="https://img.shields.io/badge/MLflow-3.x-lightgrey?logo=mlflow" />
-  <img src="https://img.shields.io/badge/Kafka-3.6.1-ff6600?logo=apache-kafka" />
-  <img src="https://img.shields.io/badge/Docker-24.x-blue?logo=docker" />
-  <img src="https://img.shields.io/badge/Kubernetes-1.x-326CE5?logo=kubernetes" />
-  <img src="https://img.shields.io/badge/Helm-3.x-0F1689?logo=helm" />
-  <img src="https://img.shields.io/badge/Terraform-1.x-7B42BC?logo=terraform" />
-  <img src="https://img.shields.io/badge/AWS-EKS-FF9900?logo=amazonaws" />
-  <img src="https://img.shields.io/badge/AWS-S3-FF9900?logo=amazons3" />
-  <img src="https://img.shields.io/badge/AWS-EFS-FF9900?logo=amazonaws" />
-  <img src="https://img.shields.io/badge/AWS-IAM-FF9900?logo=amazonaws" />
+  <!-- Lenguaje / Core -->
+  <img src="https://img.shields.io/badge/Python-3.11-3776AB?logo=python&logoColor=white" />
+
+  <!-- Data & ML -->
+  <img src="https://img.shields.io/badge/Apache%20Airflow-3.x-017CEE?logo=apache-airflow&logoColor=white" />
+  <img src="https://img.shields.io/badge/Apache%20Spark-4.0.1-E25A1C?logo=apache-spark&logoColor=white" />
+  <img src="https://img.shields.io/badge/MLflow-3.x-0194E2?logo=mlflow&logoColor=white" />
+  <img src="https://img.shields.io/badge/XGBoost-Model-4E9A06" />
+
+  <!-- Streaming -->
+  <img src="https://img.shields.io/badge/Apache%20Kafka-3.6.1-231F20?logo=apache-kafka&logoColor=white" />
+  <img src="https://img.shields.io/badge/Confluent%20Cloud-Kafka-FF6A00?logo=confluent&logoColor=white" />
+
+  <!-- Containers & Orchestration -->
+  <img src="https://img.shields.io/badge/Docker-24.x-2496ED?logo=docker&logoColor=white" />
+  <img src="https://img.shields.io/badge/Kubernetes-1.x-326CE5?logo=kubernetes&logoColor=white" />
+  <img src="https://img.shields.io/badge/AWS%20EKS-Managed%20K8s-FF9900?logo=amazonaws&logoColor=white" />
+
+  <!-- Infrastructure as Code -->
+  <img src="https://img.shields.io/badge/Terraform-IaC-7B42BC?logo=terraform&logoColor=white" />
+
+  <!-- AWS Networking -->
+  <img src="https://img.shields.io/badge/AWS%20VPC-Networking-6F42C1?logo=amazonaws&logoColor=white" />
+  <img src="https://img.shields.io/badge/NAT%20Gateway-Private%20Subnets-6F42C1" />
+  <img src="https://img.shields.io/badge/Internet%20Gateway-Public%20Access-6F42C1" />
+  <img src="https://img.shields.io/badge/AWS%20Load%20Balancer-Ingress-FF9900?logo=amazonaws&logoColor=white" />
+
+  <!-- AWS Storage -->
+  <img src="https://img.shields.io/badge/AWS%20S3-Artifact%20Store-569A31?logo=amazons3&logoColor=white" />
+  <img src="https://img.shields.io/badge/AWS%20EFS-RWX%20PVC-2E8B57?logo=amazonaws&logoColor=white" />
+
+  <!-- Security & Access -->
+  <img src="https://img.shields.io/badge/AWS%20IAM-Least%20Privilege-FF9900?logo=amazonaws&logoColor=white" />
+  <img src="https://img.shields.io/badge/IRSA-EKS%20Security-FF9900?logo=amazonaws&logoColor=white" />
+
+  <!-- CI/CD -->
+  <img src="https://img.shields.io/badge/GitHub%20Actions-CI%2FCD-2088FF?logo=github-actions&logoColor=white" />
 </p>
 
-Proyecto **end-to-end MLOps** para detección de fraude en transacciones con tarjetas de crédito:
 
-- Generación de eventos (transacciones sintéticas)
-- Entrenamiento orquestado con **Airflow**
-- Tracking/Registry con **MLflow** (artefactos en storage tipo S3)
-- **Inferencia en streaming** con **Spark Structured Streaming** consumiendo Kafka y publicando alertas
+## 📌 ¿Qué es este proyecto?
 
-Incluye dos caminos de ejecución:
+Este proyecto implementa un **sistema de detección de fraude en tiempo real**, enfocado en **producción**, no en notebooks.  
+El objetivo no es solo entrenar un modelo, sino **demostrar cómo llevar un modelo de Machine Learning a un entorno distribuido, reproducible y escalable**, usando prácticas reales de MLOps.
 
-- **Local (Docker Compose)**: stack completo con MinIO (S3 compatible), Postgres, Redis, Airflow, MLflow y servicios.
-- **Cloud (AWS/EKS)**: infraestructura con Terraform + despliegue de apps vía Helm/manifests.
+El sistema:
+- Genera **transacciones sintéticas en streaming**
+- Entrena periódicamente un modelo de fraude
+- Versiona modelos y artefactos
+- Hace **inferencia en tiempo real** sobre nuevas transacciones
+- Publica predicciones a un tópico de salida
 
-> Este repo es mi adaptación y modernización del tutorial base de CodeWithYu: https://www.youtube.com/watch?v=BY26sqZLi3k
-
----
-
-## 📋 Descripción general
-
-**Autor:** Jorge Ángel Manzanares Cortés  
-**Proyecto base:** Build a Fraud Detection AI from Scratch (CodeWithYu)  
-
-Objetivo: tener un pipeline reproducible E2E que simule transacciones, entrene un modelo con trazabilidad completa (experiments + modelos + artefactos) y ejecute inferencia en streaming para generar eventos de fraude en tiempo real.
-
-## Arquitectura (alto nivel)
-
-- Flujo: **Producers → Kafka (`transactions`) → Airflow (training) → MLflow (runs/modelos) → Inference (Spark streaming) → Kafka (`fraud_predictions`)**
-- Diagrama editable: `architecture/architecture.drawio`
+Todo esto funciona en:
+- Local (Docker Compose)
+- Kubernetes local
+- AWS EKS (infra con Terraform + deploy con GitHub Actions)
 
 ---
 
-## ☁️ Infraestructura en AWS (Terraform)
+## 🔁 Flujo funcional del sistema (end-to-end)
 
-La infraestructura principal vive en `terraform/` y crea (o prepara) lo siguiente:
+1. **Producer de transacciones**
+   - Genera transacciones **100% sintéticas** (fraude y no fraude).
+   - Simula patrones reales: card testing, account takeover, anomalías geográficas, etc.
+   - Publica eventos en **Kafka (Confluent Cloud)** mediante un CAPCAP producer.
+   - Esto se mantiene en local puesto que simula entradas externas de datos, no tiene sentido ponerlo en el cluster de EKS
 
-- **Networking:** VPC con subnets públicas/privadas + NAT (módulo `terraform-aws-vpc`).
-- **Compute:** EKS + **Managed Node Group** (módulo `terraform-aws-eks`).
-- **Storage (artefactos):** bucket **S3** para artefactos de MLflow (versioning + encryption + public access block).
-- **Storage (RWX PVCs):** **EFS** cifrado + mount targets en subnets privadas.
-- **Add-ons:** `aws-ebs-csi-driver` y `aws-efs-csi-driver` con **IRSA**.
-- **Ingress:** `ingress-nginx` crea un **AWS LoadBalancer** en subnets públicas (se instala por Helm, pero el LB es AWS).
-- **DNS (opcional):** `Route53` puede crear A-records `airflow.<zone>` y `mlflow.<zone>` apuntando al LB de ingress-nginx.
-- **Acceso al cluster:** EKS **Access Entries** para roles/usuarios (útil para GitHub Actions y acceso local).
+2. **Entrenamiento orquestado con Airflow**
+   - Un DAG corre periódicamente y:
+     - Consume datos históricos desde Kafka
+     - Preprocesa y entrena un **modelo XGBoost**
+     - Registra métricas y artefactos en **MLflow**
+   - El modelo entrenado se guarda en **storage persistente** (PVC / EFS / S3).
 
-Archivos clave:
+3. **Serving / Inferencia en tiempo real**
+   - Un pod de inferencia está **escuchando continuamente** el tópico de entrada.
+   - Cada nuevo evento recibido:
+     - Carga el **modelo más reciente**
+     - Ejecuta inferencia en baja latencia
+     - Publica el resultado en un **tópico de salida (`fraud_predictions`)**
 
-- `terraform/main.tf` (VPC, EKS, S3, EFS, add-ons)
-- `terraform/dns.tf` (Route53 opcional)
-- `terraform/outputs.tf` (URLs/DNS, bucket de artefactos, comando `update-kubeconfig`)
+4. **Ciclo continuo**
+   - El modelo se reentrena automáticamente.
+   - La inferencia siempre usa la versión más nueva.
+   - Todos los experimentos quedan trazables.
 
----
+**Pipeline resumido:**
 
-## 📌 Cambios principales (migración y compatibilidad)
-
-- **Airflow → 3.x**: actualización de DAGs/operadores y cambios de API/estructura.
-- **Spark → 4.0.1**: fijado de compatibilidades con conectores; el stack usa **Kafka clients 3.6.1**.
-- **MLflow → 3.x**: ajustes por cambios de seguridad/host validation y configuración de tracking/artifacts.
-- **Seguridad en configs**: secretos fuera de `config.yaml`, movidos a `src/.env` y a Kubernetes Secrets.
-
-## Stack y prácticas
-
-- **Orquestación:** Apache Airflow 3.x (DAGs de entrenamiento)
-- **Streaming:** Apache Spark 4.0.1 + Structured Streaming
-- **Mensajería:** Kafka 3.6.1 (topics `transactions` y `fraud_predictions`)
-- **Experiment tracking / Model Registry:** MLflow 3.x
-- **Persistencia:** PostgreSQL (metastore/backends) y almacenamiento de artefactos tipo S3 (MinIO en local/K8s o S3 en AWS)
-- **Infra/Deploy:** Docker Compose (local) + Helm/Kubernetes (cluster) + Terraform (infra AWS/EKS)
+  - Producer → Kafka (transactions)
+  - Airflow (training DAG)
+  - MLflow (model registry + artifacts in Postgres)
+  - Inference Pod → (fraud_predictions)
 
 ---
 
-## 🔬 Datos: generación de transacciones sintéticas
+## 📊 Métricas actuales y contexto
 
-Las transacciones se generan con reglas estocásticas para simular patrones reales y fraude (útil para entrenar y probar el pipeline sin datos sensibles).
+- Precisión aproximada: **~0.80**
+- Recall aproximado: **~0.44**
 
-Ejemplos de patrones simulados:
+Estas métricas **no son el foco principal del proyecto**.
 
-- **Account takeover:** montos grandes y merchants inusuales.
-- **Card testing:** micropagos repetitivos en poco tiempo.
-- **Merchant collusion:** merchants de “alto riesgo” con tickets altos.
-- **Anomalías geográficas:** ubicaciones atípicas para el usuario.
-- **Fraude baseline:** ruido de baja probabilidad para realismo.
+### ¿Por qué?
+- Los datos son **sintéticos**, no reales.
+- El fraude real tiene patrones mucho más consistentes.
+- Existe **desbalance de clases** y ruido intencional.
 
-## Estructura del repo
+El objetivo aquí es demostrar:
+- Retraining automático
+- Inferencia en streaming
+- Versionado y trazabilidad
+- Escalabilidad y operación real
 
-- `src/`: entorno local con `docker-compose.yaml`, servicios y scripts
-  - `src/airflow/`: imagen y dependencias de Airflow
-  - `src/producer/`: producer de transacciones (dockerizable)
-  - `src/inference/`: servicio de inferencia en streaming
-- `k8s/`: despliegue en Kubernetes (Helm values/manifests)
-  - `k8s/airflow/`, `k8s/mlflow/`, `k8s/postgres/`, `k8s/minio/`, `k8s/inference/`, `k8s/ingress-rules/`
-- `architecture/`: diagramas (draw.io)
-
----
-
-## Configuración
-
-- Variables sensibles van en `src/.env` (y en cluster como Secret `env-secret`).
-- Config de aplicación en `src/config.yaml` (por ejemplo MLflow/Kafka/Spark).
+Aun así, el pipeline soporta:
+- Oversampling / SMOTE
+- Class weights
+- Hyperparameter tuning
 
 ---
 
-## Cómo correr en local (Docker Compose)
+## 🧠 Decisiones técnicas clave (y por qué importan)
 
-1) Dar permisos a scripts (una vez):
-```bash
-chmod +x init-multiple-dbs.sh wait-for-it.sh
-```
+### XGBoost
+- Excelente rendimiento en datos tabulares.
+- Inferencia rápida (baja latencia).
+- No requiere GPU.
+- Ideal bajo **restricciones de CPU**.
 
-2) Construir imagen de Airflow (solo una vez por cambios de dependencias):
-```bash
-docker compose --profile build build airflow-image
-```
-
-3) Levantar el stack (Airflow + servicios):
-```bash
-docker compose --profile flower up -d
-```
-
-4) Levantar inferencia (opcional):
-```bash
-docker compose up inference -d --build
-```
-
-Para apagar:
-```bash
-docker compose --profile flower down
-```
+Elegí XGBoost porque una red neuronal:
+- Requeriría más cómputo
+- No aporta ventaja clara en este dataset
+- Complica serving innecesariamente
 
 ---
 
-## Deploy en Kubernetes (EKS / cluster)
+### Kubernetes multinodo (>3 nodos)
+- Cada nodo tiene recursos limitados (≈2 CPU, 8GB RAM).
+- Un solo nodo **no alcanza** para Airflow + Spark + Inference.
+- Se opta por **escalado horizontal**:
+  - Varias instancias pequeñas
+  - Suma de CPU y memoria
+  - Arquitectura distribuida real
 
-Los manifests/values están en `k8s/` y el “runbook” base está en `k8s-steps.txt`.
-
-Resumen (namespaces + Helm):
-
-```bash
-kubectl create namespace mlops-fraud
-
-# Secret con variables (desde src/.env)
-kubectl create secret generic env-secret --from-env-file=src/.env -n mlops-fraud
-
-# Airflow (incluye PVC para modelos)
-kubectl apply -f k8s/airflow/models-pvc.yaml -n mlops-fraud
-helm install my-airflow apache-airflow/airflow --namespace mlops-fraud -f k8s/airflow/airflow_values.yaml
-
-# PostgreSQL + MLflow
-helm install postgres bitnami/postgresql -n mlops-fraud -f k8s/postgres/postgres_values.yaml
-helm install my-mlflow community-charts/mlflow -n mlops-fraud -f k8s/mlflow/mlflow_values.yaml
-
-# Ingress
-helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx \
-  --namespace ingress-nginx --create-namespace
-helm install ingress-rule ./k8s/ingress-rules -n mlops-fraud
-
-# MinIO (si usas object-store tipo S3 dentro del cluster)
-helm install my-minio oci://registry-1.docker.io/cloudpirates/minio --version 0.5.6 \
-  -f k8s/minio/minio_values.yaml -n mlops-fraud
-```
-
-> Nota: si apuntas a **AWS S3** como artifact store, normalmente no necesitas MinIO (y es importante no setear endpoints vacíos).
+Esto refleja un escenario real:
+> No siempre puedes pagar una máquina grande, pero sí varias pequeñas. En este caso, se uso el Free Tier de AWS por lo que una maquina con más poder computacional no estaba disponible, se usaron instancias m7i-flex.large
 
 ---
 
-## CI/CD e Infra (Terraform)
+### Airflow + GitHub Sync
+- El Helm Chart de Airflow está **poco documentado**.
+- Requirió prueba y error para:
+  - Variables de entorno
+  - Secrets
+  - GitHub Sync
+- Una vez resuelto:
+  - DAGs versionados
+  - Deploy reproducible
+  - Mismo enfoque aplicado al pod de inferencia
+- Se evita `port-forward` (mala práctica en producción).
 
-- Infra en AWS/EKS con Terraform (carpeta `terraform/`).
-- Charts/values para apps en `k8s/`.
-- Pipelines con GitHub Actions (carpeta `.github/workflows/`), pensados para automatizar build/push/deploy.
 
 ---
 
-## Credits
-
-Basado en el tutorial de CodeWithYu (link arriba). Esta versión contiene mis adaptaciones para compatibilidad con **Airflow 3.x**, **Spark 4.0.1**, **MLflow 3.x** y el despliegue local + Kubernetes.
+### MLflow (seguridad y exposición)
+- MLflow 3.x impone validaciones estrictas de host/origin.
+- Se configuró explícitamente para:
+  - Evitar accesos no autorizados
+  - Exponer solo vía Ingress
+- Se evita `port-forward` (mala práctica en producción).
 
 ---
 
-## Autor
+### Infraestructura como código (Terraform)
+- VPC, EKS, EFS, S3, IRSA, add-ons
+- IAM mínimo necesario:
+  - Roles separados
+  - Role asumible por GitHub Actions
+- Infra **destruible y reproducible**
+
+⚠️ Nota: algunos LoadBalancers creados por Ingress deben eliminarse manualmente si no están bajo Terraform.
+
+---
+
+## 📈 Observabilidad y performance
+
+- Latencia de inferencia: **baja**
+- Monitoring básico con **MetricServer** para determinar la cantidad de nodos necesarios
+- No se instaló Grafana/Prometheus por simplicidad
+  - Añadirlos es trivial (Helm)
+- El sistema demostró:
+  - Flujo continuo
+  - Consumo real de Kafka
+  - Predicciones en tiempo real
+
+---
+
+## 🌱 Escalabilidad y extensiones posibles
+
+Este proyecto **no está cerrado**. Puede evolucionar fácilmente:
+
+- HPA para inference y Airflow workers
+- Dashboards en tiempo real (Kafka → Web App)
+- Monitoreo de métricas de modelo (drift, recall over time)
+- Monitoreo usando Grafana + Prometheus
+- Model selection automático
+- Más productores / mayor throughput
+- Charts Helm propios
+- Usar Karpenter para escalado de nodos
+
+---
+
+## 🎯 Filosofía del proyecto
+
+Este proyecto **no busca ser un Kaggle notebook**.
+
+Busca demostrar:
+- Cómo pensar en **ML en producción**
+- Cómo manejar **limitaciones reales de cómputo**
+- Cómo diseñar sistemas **reentrenables, escalables y trazables**
+- Cómo llevar un modelo desde local → Kubernetes → EKS
+
+---
+
+## 👤 Autor
 
 **Jorge Ángel Manzanares Cortés**
+
+Proyecto basado en el tutorial [Build a Fraud Detection AI from Scratch – CodeWithYu](https://www.youtube.com/watch?v=BY26sqZLi3k), adaptado y extendido para:
+- Airflow 3.x
+- Spark 4.0.1
+- MLflow 3.x
+- Kubernetes multinodo
+- AWS EKS + Terraform

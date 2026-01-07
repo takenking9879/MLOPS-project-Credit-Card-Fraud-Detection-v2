@@ -1,0 +1,85 @@
+Accion = """
+Lee los archivos de la carpeta terraform/ y genera el diagrama AWS usando diagrams.
+Identifica cuentas, VPCs, subnets, ALB, EKS, Lambda, RDS, S3 y relaciones entre ellos.
+"""
+
+prompt = """
+Objetivo:
+Generar un script Python COMPLETO usando la librería `diagrams` que cree un diagrama
+de arquitectura AWS con estilo ENTERPRISE, similar a diagramas oficiales de AWS
+(multi-cuenta, VPC bien delimitada, edge separado, flujos claros y buen espaciado). Usar el ejemplo diagrams/base_diagram.png
+y apuntar a ese resultado
+
+CONTEXTO DE ARQUITECTURA:
+Arquitectura solicitada:
+f"{Accion}"
+
+REGLAS VISUALES OBLIGATORIAS:
+1) Usa CLUSTERS jerárquicos claros:
+   - "AWS Cloud"
+     - "Cuenta Principal"
+        - "VPC"
+           - Backend (EKS / Lambda / RDS / Aurora, etc.)
+     - "Edge & Static" (CloudFront, S3) — FUERA de la VPC
+     - "Seguridad Opcional" (WAF) — FUERA de la VPC
+     - "Observabilidad" (CloudWatch)
+   - "Cuenta Cliente" (si aplica)
+
+2) Usa graph_attr profesionales:
+   fontsize=16
+   bgcolor=white
+   pad=0.5
+   nodesep entre 0.6 y 1.0
+   ranksep ~1
+   splines="ortho"
+
+3) Usa colores suaves por dominio (similar a diagramas oficiales AWS):
+   - Edge: verde claro
+   - Backend: lila/gris suave
+   - Seguridad: rojo claro
+   - Observabilidad: azul claro
+
+4) Usa Edge con semántica clara:
+   - dashed + label para componentes opcionales (ej. WAF -> CloudFront "si es requerido")
+   - colores distintos por tipo de tráfico
+   - dotted/gris para observabilidad
+
+5) Usa nodos Blank e edges invisibles para:
+   - Alinear verticalmente Observabilidad
+   - Evitar cruces de líneas
+
+6) Los labels DEBEN estar en español y ser multilinea:
+   Ejemplo:
+   "CloudFront\\n(CDN y Edge)"
+
+7) El código debe:
+   - Ser limpio
+   - Tener comentarios explicando decisiones de layout
+   - Estar listo para ejecutarse
+   - Generar un PNG
+   - show=False
+   - Guardarse en la carpeta diagrams/ con nombre arquitectura.png
+
+8) IMPORTANTE:
+   - No expliques el código fuera de comentarios
+   - No generes texto adicional
+   - Produce SOLO el script Python final
+   - Usa "conda activate diagrams-env && python3 diagrams/prompt.py" para correr el script
+
+9) Revisión final:
+   - Asegúrate que el diagrama resultante cumple todas las reglas visuales, y es comparable a diagramas oficiales AWS.
+   - Revisa el output en diagrams/arquitectura.png y verifica su legibilidad, arregla el codigo si hay texto mal alineado, 
+
+Importaciones posibles que usa diagrams:
+from diagrams import Cluster, Diagram, Edge
+from diagrams.aws.[compute, general, management, network, security, storage, blank]
+
+
+RESULTADO ESPERADO:
+Un diagrama visualmente comparable a diagramas oficiales AWS:
+- bien espaciado
+- capas claras
+- fácil de leer en 5 segundos
+- defendible en una revisión de arquitectura
+"""
+

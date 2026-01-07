@@ -184,6 +184,9 @@ Esto refleja un escenario real:
 
 ---
 
+## Arquitectura
+![Arquitectura AWS EKS](diagrams/arquitectura.png)
+
 ## 📈 Observabilidad y performance
 
 - Latencia de inferencia: **baja**
